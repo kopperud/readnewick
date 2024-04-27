@@ -1,12 +1,49 @@
 use std::fs;
 use regex::Regex;
+use std::collections::HashSet;
+use std::{cell,RefCell, rc::Rc};
+
+struct Branch {
+    inbounds: 
+}
 
 fn tokenize(s: &str) -> Vec<String> {
-    //let v: Vec<str> = Vec::new();
-    let mut v: Vec<String> = Vec::new();
+    //let tokens: Vec<str> = Vec::new();
+    let mut tokens: Vec<String> = Vec::new();
 
-    v.push("hello".to_string());
-    return v;
+    let mut special_tokens = HashSet::new();
+    special_tokens.insert('(');
+    special_tokens.insert(')');
+    special_tokens.insert(';');
+    special_tokens.insert(',');
+    special_tokens.insert('[');
+    special_tokens.insert(']');
+
+
+    let chars = s.chars();
+    let mut iter = chars.peekable();
+    let mut token = "".to_string();
+
+
+    while let Some(_) = iter.peek(){
+        if let Some(c) = iter.next(){
+
+            let is_special = special_tokens.contains(&c);
+            token.push(c);
+
+            if is_special{
+                tokens.push(token);
+                token = "".to_string();
+            }else{
+                let next = iter.peek().expect("reason");
+                if special_tokens.contains(next){
+                    tokens.push(token);
+                    token = "".to_string();
+                }
+            }
+        }
+    }
+    return tokens;
 }
 
 fn stripcomments(contents: &str) -> String {
@@ -24,35 +61,26 @@ fn main() {
     let stripped_contents = stripcomments(&contents); 
 
 
-    println!("With text: \n {stripped_contents}");
+    //println!("With text: \n {stripped_contents}");
 
+    let s = "(((A:0.5,B:0.5):0.5):1.0,C:1.5);";
+    //let v = tokenize(&stripped_contents);
+    //println!("{}", v[0]);
+    //let v = tokenize(&s);
     let v = tokenize(&stripped_contents);
-    println!("{}", v[0]);
 
-
-    let mut count = 0u32;
-
-    let mut chars = v[0].chars();
-    let mut iter = chars.peekable();
-
-    while let Some(_) = iter.next(){
-        if let Some(c) = iter.peek(){
-            //let item = chars.nth(0).unwrap();
-            println!("{}", c);
-            println!("is a parenthesis: {}", c == &'(');
-            count += 1;
-        }
+    for i in v.iter(){
+        let isp = i == ",";
+        println!("{i} \t, is comma = {}", isp);
     }
 
-    let s = "this (inside parenthesis) is a sentence".to_string();
-    let mut chars2 = s.chars();
+    /* let mut chars2 = s.chars();
     let mut iter2 = chars2.peekable();
 
-    let mut inside = String::new();
 
     let u_item = iter2.position(|x| x == ')');
-    let item = u_item.unwrap();
+    let item = u_item.unwrap(); */
 
-    println!("{}", item);
+    // println!("{}", item);
     
 }
