@@ -1,26 +1,27 @@
 use std::fs;
 use regex::Regex;
 use std::collections::HashSet;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
+use std::cell::RefCell;
 
 //use std::{cell::RefCell, rc::Rc};
 
 //pub type NodeRef = Rc<RefCell<Node>>;
 //pub type BranchRef = Rc<RefCell<Branch>>;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Branch {
-    inbounds: Option<Rc<Node>>,
-    outbounds: Option<Rc<Node>>,
+    inbounds: Option<RefCell<Weak<Node>>>,
+    outbounds: Option<RefCell<Rc<Node>>>,
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Node {
-    inbounds: Option<Rc<Branch>>,
-    left: Option<Rc<Branch>>,
-    right: Option<Rc<Branch>>,
+    inbounds: Option<RefCell<Weak<Branch>>>,
+    left: Option<RefCell<Rc<Branch>>>,
+    right: Option<RefCell<Rc<Branch>>>,
 }
-
+/*
 impl Node{
     pub fn set_left(&self, branch: Rc<Branch>) {
         self.left = Some(branch);
@@ -31,7 +32,7 @@ impl Node{
        self.right = Some(branch);
     }
 }
-
+*/
 
 
 fn tokenize(s: &str) -> Vec<String> {
@@ -103,12 +104,41 @@ fn main() {
         println!("{i} \t, is comma = {}", isp);
     }
 
-    let node = Rc::new(Node::default());
-    let branch_left = Rc::new(Branch::default());
-    let branch_right = Rc::new(Branch::default());
+    let node = Node {
+            inbounds: Some(RefCell::new(Weak::new())),
+            //left: RefCell::new(Rc::new(Branch)),
+            //right: RefCell::new(Rc::new(Branch)),
+            left: None,
+            right: None,
+        };
+
+    let branch = Branch {
+        inbounds: Some(RefCell::new(Weak::new())),
+        outbounds: None,
+    }
+
+
+/*
+    let branch = Rc::new(
+            Branch {
+               inbounds: RefCell::new(Weak::new()),
+               outbounds: RefCell::new(Rc::new()),
+            }
+        );
+    */
+
+    //let node = Rc::new(Node::default());
+    //let branch_left = Rc::new(Branch::default());
+
+//    branch_left.inbounds = RefCell::new(Rc::clone(&node))
+    
+    //branch_left.inbounds = Rc::Weak(Rc::downgrade(&node));
+
+
+    //let branch_right = Rc::new(Branch::default());
 
     //node.left = Some(branch_left);
-    node.set_left(Rc::clone(&branch_left));
+    //node.set_left(Rc::clone(&branch_left));
     //
     //let node_ref = &node;
     //let branch_left_ref = &branch_left;
