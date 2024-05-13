@@ -144,6 +144,28 @@ fn find_comma(tokens: &[String]) -> usize {
     panic!("crash and burn");
 }
 
+fn left_right_tokens(tokens: &[String]) -> (&[String], &[String]) {
+    let ps = find_comma(&tokens);
+
+    //let n_tokens = tokens.len();
+    //let n_minus_one = n_tokens - 1;
+
+    //let slice = &tokens[1..n_minus_two];
+
+    let left = &tokens[1..ps];
+    let right = &tokens[(ps+1)..];
+
+    return (left, right)
+}
+
+fn parse_brlen(token: &str) -> f64 {
+    let colon_pos = token.find(':').unwrap();
+
+    let trailing = &token[(colon_pos+1)..];
+    let branch_length: f64 = trailing.parse().unwrap();
+    return branch_length
+}
+
 fn main() {
     println!("Hello, world!");
 
@@ -170,21 +192,31 @@ fn main() {
     println!("{:?}", root_node.children.borrow()[0].outbounds.borrow());
 
     let n_tokens = tokens.len();
-    let n_minus_one = n_tokens - 2;
+    let n_minus_two = n_tokens - 2;
 
-    let slice = &tokens[1..n_minus_one];
+    let slice = &tokens[1..n_minus_two];
 
     println!("{:?}", &slice);
     let ps = find_comma(&slice);
 
     println!("comma position: \t {ps}"); 
 
-    let left = &slice[1..ps];
-    println!("left: \t {:?}", &left);
+    //let left = &slice[1..ps];
+    //let right = &slice[(ps+1)..];
+    //
+    let (left, right) = left_right_tokens(&slice);
 
-    let right = &slice[(ps+1)..];
+    println!("left: \t {:?}", &left);
     println!("right: \t {:?}", &right);
 
+    let last_token = &left.last().unwrap();
+    println!("last token: \t {:?}", &last_token);
+    println!("position of colon: \t {:?}", last_token.find(':').unwrap());
+    println!("position of colon in \"HomoSapiens:0.123\": \t {:?}", "HomoSapiens:0.123".find(':').unwrap());
+
+    let fake_token = "Homo_sapiens:15.123";
+    println!("fake token: \t {}", &fake_token);
+    println!("with branch length: \t {}", parse_brlen(fake_token));
     let v: Vec<i32> = Vec::new();
 
 }
