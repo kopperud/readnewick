@@ -13,7 +13,7 @@ use std::cell::RefCell;
 pub struct Branch {
     index: i32,
     time: f64,
-    inbounds: RefCell<Rc<Node>>,
+    inbounds: RefCell<Weak<Node>>,
     outbounds: RefCell<Rc<Node>>,
 }
 
@@ -21,7 +21,7 @@ pub struct Branch {
 pub struct Node {
     index: i32, 
     parent: RefCell<Weak<Branch>>,
-    children: RefCell<Vec<Weak<Branch>>>,
+    children: RefCell<Vec<Rc<Branch>>>,
 }
 
 
@@ -96,19 +96,19 @@ fn dummy() -> Rc<Node> {
     let branch1 = Rc::new(Branch {
         index: 1,
         time: 1.0,
-        inbounds: RefCell::new(Rc::clone(&root_node)),
+        inbounds: RefCell::new(Rc::downgrade(&root_node)),
         outbounds: RefCell::new(Rc::clone(&leaf1)),
     });
-    root_node.children.borrow_mut().push(Rc::downgrade(&branch1));
+    root_node.children.borrow_mut().push(Rc::clone(&branch1));
     *leaf1.parent.borrow_mut() = Rc::downgrade(&branch1);
 
     let branch2 = Rc::new(Branch {
         index: 2,
         time: 1.0,
-        inbounds: RefCell::new(Rc::clone(&root_node)),
+        inbounds: RefCell::new(Rc::downgrade(&root_node)),
         outbounds: RefCell::new(Rc::clone(&leaf2)),
     });
-    root_node.children.borrow_mut().push(Rc::downgrade(&branch2));
+    root_node.children.borrow_mut().push(Rc::clone(&branch2));
     *leaf2.parent.borrow_mut() = Rc::downgrade(&branch2);
 
     println!("{:?}", leaf1.children.borrow().len());
