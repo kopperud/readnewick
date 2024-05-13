@@ -11,15 +11,14 @@ use std::cell::RefCell;
 
 #[derive(Debug, Default)]
 pub struct Branch {
-    inbounds: Option<RefCell<Weak<Node>>>,
-    outbounds: Option<RefCell<Rc<Node>>>,
+    value: i32,
+    nodes: RefCell<Vec<Rc<Node>>>,
 }
 
 #[derive(Debug, Default)]
 pub struct Node {
-    inbounds: Option<RefCell<Weak<Branch>>>,
-    left: Option<RefCell<Rc<Branch>>>,
-    right: Option<RefCell<Rc<Branch>>>,
+    value: i32, 
+    branches: RefCell<Vec<Weak<Branch>>>,
 }
 /*
 impl Node{
@@ -103,59 +102,49 @@ fn main() {
         let isp = i == ",";
         println!("{i} \t, is comma = {}", isp);
     }
+   
+    let leaf1 = Rc::new(Node {
+        value: 1,
+        branches: RefCell::new(vec![Weak::new()]),
+    });
 
-    let node = Node {
-            inbounds: Some(RefCell::new(Weak::new())),
-            //left: RefCell::new(Rc::new(Branch)),
-            //right: RefCell::new(Rc::new(Branch)),
-            left: None,
-            right: None,
-        };
+    let leaf2 = Rc::new(Node {
+        value: 2,
+        branches: RefCell::new(vec![Weak::new()]),
+    });
 
-    let branch = Branch {
-        inbounds: Some(RefCell::new(Weak::new())),
-        outbounds: None,
-    }
+    let internal_node = Rc::new(Node {
+        value: 3,
+        branches: RefCell::new(vec![]),
+    });
 
+    let branch1 = Rc::new(Branch {
+        value: 1,
+        nodes: RefCell::new(vec![]),
+    });
 
-/*
-    let branch = Rc::new(
-            Branch {
-               inbounds: RefCell::new(Weak::new()),
-               outbounds: RefCell::new(Rc::new()),
-            }
-        );
-    */
+    //push leaf and internal node to branch1
+    branch1.nodes.borrow_mut().push(Rc::clone(&leaf1));
+    branch1.nodes.borrow_mut().push(Rc::clone(&internal_node));
 
-    //let node = Rc::new(Node::default());
-    //let branch_left = Rc::new(Branch::default());
+    let branch2 = Rc::new(Branch {
+        value: 2,
+        nodes: RefCell::new(vec![]),
+    });
 
-//    branch_left.inbounds = RefCell::new(Rc::clone(&node))
-    
-    //branch_left.inbounds = Rc::Weak(Rc::downgrade(&node));
+    //push leaf and internal node to branch2
+    branch2.nodes.borrow_mut().push(Rc::clone(&leaf2));
+    branch2.nodes.borrow_mut().push(Rc::clone(&internal_node));
 
+    //push branch to the leaf nodes
+    leaf1.branches.borrow_mut().push(Rc::downgrade(&branch1));
+    leaf2.branches.borrow_mut().push(Rc::downgrade(&branch2));
 
-    //let branch_right = Rc::new(Branch::default());
+    //push branches to the internal node 
+    internal_node.branches.borrow_mut().push(Rc::downgrade(&branch1));
+    internal_node.branches.borrow_mut().push(Rc::downgrade(&branch2));
 
-    //node.left = Some(branch_left);
-    //node.set_left(Rc::clone(&branch_left));
-    //
-    //let node_ref = &node;
-    //let branch_left_ref = &branch_left;
+    let v: Vec<i32> = Vec::new();
 
-    //node.left = Some(branch_left_ref);
-    //node.right = Some(branch_right);
-
-    //branch_left.inbounds = Some(node);
-
-
-    /* let mut chars2 = s.chars();
-    let mut iter2 = chars2.peekable();
-
-
-    let u_item = iter2.position(|x| x == ')');
-    let item = u_item.unwrap(); */
-
-    // println!("{}", item);
-    
+    println!("{:?}", internal_node)
 }
