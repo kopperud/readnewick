@@ -12,26 +12,16 @@ use std::cell::RefCell;
 #[derive(Debug, Default)]
 pub struct Branch {
     value: i32,
-    nodes: RefCell<Vec<Rc<Node>>>,
+    inbounds: RefCell<Rc<Node>>,
+    outbounds: RefCell<Rc<Node>>,
 }
 
 #[derive(Debug, Default)]
 pub struct Node {
     value: i32, 
-    branches: RefCell<Vec<Weak<Branch>>>,
+    parent: RefCell<Weak<Branch>>,
+    children: RefCell<Vec<Weak<Branch>>>,
 }
-/*
-impl Node{
-    pub fn set_left(&self, branch: Rc<Branch>) {
-        self.left = Some(branch);
-        //branch.inbounds = Some(&self);
-    }
-
-    pub fn set_right(&self, branch: Rc<Branch>) {
-       self.right = Some(branch);
-    }
-}
-*/
 
 
 fn tokenize(s: &str) -> Vec<String> {
@@ -103,48 +93,44 @@ fn main() {
         println!("{i} \t, is comma = {}", isp);
     }
    
+    let internal_node = Rc::new(Node {
+        value: 3,
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
+    });
+
     let leaf1 = Rc::new(Node {
         value: 1,
-        branches: RefCell::new(vec![Weak::new()]),
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
     });
 
     let leaf2 = Rc::new(Node {
         value: 2,
-        branches: RefCell::new(vec![Weak::new()]),
-    });
-
-    let internal_node = Rc::new(Node {
-        value: 3,
-        branches: RefCell::new(vec![]),
+        parent: RefCell::new(Weak::new()),
+        children: RefCell::new(vec![]),
     });
 
     let branch1 = Rc::new(Branch {
         value: 1,
-        nodes: RefCell::new(vec![]),
+        inbounds: RefCell::new(Rc::clone(&internal_node)),
+        outbounds: RefCell::new(Rc::clone(&leaf1)),
     });
-
-    //push leaf and internal node to branch1
-    branch1.nodes.borrow_mut().push(Rc::clone(&leaf1));
-    branch1.nodes.borrow_mut().push(Rc::clone(&internal_node));
+    internal_node.children.borrow_mut().push(Rc::downgrade(&branch1));
+    *leaf1.parent.borrow_mut() = Rc::downgrade(&branch1);
 
     let branch2 = Rc::new(Branch {
         value: 2,
-        nodes: RefCell::new(vec![]),
+        inbounds: RefCell::new(Rc::clone(&internal_node)),
+        outbounds: RefCell::new(Rc::clone(&leaf2)),
     });
+    internal_node.children.borrow_mut().push(Rc::downgrade(&branch2));
+    *leaf2.parent.borrow_mut() = Rc::downgrade(&branch2);
 
-    //push leaf and internal node to branch2
-    branch2.nodes.borrow_mut().push(Rc::clone(&leaf2));
-    branch2.nodes.borrow_mut().push(Rc::clone(&internal_node));
-
-    //push branch to the leaf nodes
-    leaf1.branches.borrow_mut().push(Rc::downgrade(&branch1));
-    leaf2.branches.borrow_mut().push(Rc::downgrade(&branch2));
-
-    //push branches to the internal node 
-    internal_node.branches.borrow_mut().push(Rc::downgrade(&branch1));
-    internal_node.branches.borrow_mut().push(Rc::downgrade(&branch2));
 
     let v: Vec<i32> = Vec::new();
 
-    println!("{:?}", internal_node)
+    println!("{:?}", leaf1.children.borrow().len())
 }
+
+
