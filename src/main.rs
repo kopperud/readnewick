@@ -13,14 +13,14 @@ use std::cell::RefCell;
 pub struct Branch {
     index: i32,
     time: f64,
-    inbounds: RefCell<Weak<Node>>,
+    //inbounds: RefCell<Weak<Node>>,
     outbounds: RefCell<Rc<Node>>,
 }
 
 #[derive(Debug, Default)]
 pub struct Node {
     index: i32, 
-    parent: RefCell<Weak<Branch>>,
+    //parent: RefCell<Weak<Branch>>,
     children: RefCell<Vec<Rc<Branch>>>,
 }
 
@@ -77,42 +77,71 @@ fn stripcomments(contents: &str) -> String {
 fn dummy() -> Rc<Node> {
     let root_node = Rc::new(Node {
         index: 3,
-        parent: RefCell::new(Weak::new()),
+        //parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
 
     let leaf1 = Rc::new(Node {
         index: 1,
-        parent: RefCell::new(Weak::new()),
+        //parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
 
     let leaf2 = Rc::new(Node {
         index: 2,
-        parent: RefCell::new(Weak::new()),
+        //parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
 
     let branch1 = Rc::new(Branch {
         index: 1,
         time: 1.0,
-        inbounds: RefCell::new(Rc::downgrade(&root_node)),
+        //inbounds: RefCell::new(Rc::downgrade(&root_node)),
         outbounds: RefCell::new(Rc::clone(&leaf1)),
     });
     root_node.children.borrow_mut().push(Rc::clone(&branch1));
-    *leaf1.parent.borrow_mut() = Rc::downgrade(&branch1);
+    //*leaf1.parent.borrow_mut() = Rc::downgrade(&branch1);
 
     let branch2 = Rc::new(Branch {
         index: 2,
         time: 1.0,
-        inbounds: RefCell::new(Rc::downgrade(&root_node)),
+        //inbounds: RefCell::new(Rc::downgrade(&root_node)),
         outbounds: RefCell::new(Rc::clone(&leaf2)),
     });
     root_node.children.borrow_mut().push(Rc::clone(&branch2));
-    *leaf2.parent.borrow_mut() = Rc::downgrade(&branch2);
+    //*leaf2.parent.borrow_mut() = Rc::downgrade(&branch2);
 
     println!("{:?}", leaf1.children.borrow().len());
     return root_node
+}
+
+fn parse_newick() -> Rc<Node> {
+    let node = Rc::new(Node {
+        index: 1,
+        children: RefCell::new(vec![]),
+    });
+    return node
+}
+
+fn find_comma(tokens: &[String]) -> usize {
+    let mut ps = 0;
+
+    let n_tokens = tokens.len();
+
+    for i in 0..n_tokens {
+        let token = &tokens[i];
+        if token == "(" {
+            ps += 1;
+        }else if token == ")" {
+            ps -= 1;
+        }
+
+        if (token == ",") & (ps == 0){
+            return i
+        }
+    }
+
+    panic!("crash and burn");
 }
 
 fn main() {
@@ -126,16 +155,35 @@ fn main() {
     //println!("With text: \n {stripped_contents}");
 
     let s = "(((A:0.5,B:0.5):0.5):1.0,C:1.5);";
-    //println!("{}", v[0]);
-    let v = tokenize(&s);
-    //let v = tokenize(&stripped_contents);
+    //println!("{}", tokens[0]);
+    let tokens = tokenize(&s);
+    //let tokens = tokenize(&stripped_contents);
 
-    for i in v.iter(){
-        let isp = i == ",";
-        println!("{i} \t, is comma = {}", isp);
+    for token in tokens.iter(){
+        let isp = token == ",";
+        println!("{token} \t, is comma = {}", isp);
     }
   
     let root_node = dummy();
+
+    println!("{:?}", root_node);
+    println!("{:?}", root_node.children.borrow()[0].outbounds.borrow());
+
+    let n_tokens = tokens.len();
+    let n_minus_one = n_tokens - 2;
+
+    let slice = &tokens[1..n_minus_one];
+
+    println!("{:?}", &slice);
+    let ps = find_comma(&slice);
+
+    println!("comma position: \t {ps}"); 
+
+    let left = &slice[1..ps];
+    println!("left: \t {:?}", &left);
+
+    let right = &slice[(ps+1)..];
+    println!("right: \t {:?}", &right);
 
     let v: Vec<i32> = Vec::new();
 
