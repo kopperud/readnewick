@@ -1,8 +1,10 @@
 use std::fs;
-use regex::Regex;
-use std::collections::HashSet;
+use std::env;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
+use std::collections::HashSet;
+use microbench::{self, Options};
+use regex::Regex;
 
 //use std::{cell::RefCell, rc::Rc};
 
@@ -126,27 +128,27 @@ fn parse_newick(tokens: &[String]) -> Rc<Node> {
         children: RefCell::new(vec![]),
     });
     // strip semicolon
-    let n_minus_three = tokens.len() - 3;
-    let slice = &tokens[1..n_minus_three];
-    let (left, right) = left_right_tokens(&slice);
+    let n_minus_two = tokens.len() - 2;
+    let slice = &tokens[1..n_minus_two];
+    let (left, right) = partition(&slice);
+
+    println!("right from root: \t {:?}", &right);
     
     if !left.is_empty(){
-        if left.last().expect("reason").starts_with(':'){
-            // add internal edge
-            internaledge(left, &node); 
-        }else{
-            // add terminal edge 
+        //if left.last().expect("reason").starts_with(':'){
+        if left.len() == 1{
             terminaledge(left, &node);
+        }else{
+            internaledge(left, &node); 
         }
     } 
     
     if !right.is_empty(){
-        if right.last().expect("reason").starts_with(':'){
-            // add internal edge
-            internaledge(right, &node); 
-        }else{
-            // add terminal edge 
+        //if right.last().expect("reason").starts_with(':'){
+        if left.len() == 1{
             terminaledge(right, &node);
+        }else{
+            internaledge(right, &node); 
         }
     }
 
@@ -176,13 +178,16 @@ fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
 }
 
 fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
+    // strip parentheses
+    println!("tokens: \t {:?}", &tokens);
     let l = parse_brlen(tokens.last().expect("reason"));
 
-    // strip parentheses
-    let n_minus_two = tokens.len() - 2;
-    println!("before slice: {:?}", &tokens);
-    let slice = &tokens[1..n_minus_two];
-    println!("after slice: {:?}", &slice);
+    let n_minus_one = tokens.len() - 1;
+    //println!("before slice: {:?}", &tokens);
+    let slice = &tokens[1..n_minus_one];
+
+    //let slice = &slice0[..(slice0.len()-1)];
+    //println!("after slice: {:?}", &slice);
 
     // add a new internal node and branch
     let node = Rc::new(Node {
@@ -197,27 +202,25 @@ fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     });
     parent_node.children.borrow_mut().push(Rc::clone(&branch1));
     
-    let (left, right) = left_right_tokens(&slice);
+    let (left, right) = partition(&slice);
    
     println!("left: \t {:?}", &left);
     println!("right: \t {:?}", &right);
     if !left.is_empty(){
-        if left.last().expect("reason").starts_with(':'){
-            // add internal edge
-            internaledge(left, &node); 
-        }else{
-            // add terminal edge 
+        //if left.last().expect("reason").starts_with(':'){
+        if left.len() == 1{
             terminaledge(left, &node);
+        }else{
+            internaledge(left, &node); 
         }
     } 
     
     if !right.is_empty(){
-        if right.last().expect("reason").starts_with(':'){
-            // add internal edge
-            internaledge(right, &node); 
-        }else{
-            // add terminal edge 
+        //if right.last().expect("reason").starts_with(':'){
+        if right.len() == 1{
             terminaledge(right, &node);
+        }else{
+            internaledge(right, &node); 
         }
     }
 }
@@ -243,13 +246,8 @@ fn find_comma(tokens: &[String]) -> usize {
     panic!("crash and burn");
 }
 
-fn left_right_tokens(tokens: &[String]) -> (&[String], &[String]) {
+fn partition(tokens: &[String]) -> (&[String], &[String]) {
     let ps = find_comma(&tokens);
-
-    //let n_tokens = tokens.len();
-    //let n_minus_one = n_tokens - 1;
-
-    //let slice = &tokens[1..n_minus_two];
 
     let left = &tokens[0..ps];
     let right = &tokens[(ps+1)..];
@@ -258,6 +256,7 @@ fn left_right_tokens(tokens: &[String]) -> (&[String], &[String]) {
 }
 
 fn parse_brlen(token: &str) -> f64 {
+    println!("token for parse brlen: \t {:?}", token);
     let colon_pos = token.find(':').unwrap();
 
     let trailing = &token[(colon_pos+1)..];
@@ -304,7 +303,9 @@ fn main() {
 
     //println!("With text: \n {stripped_contents}");
 
-    let s = "((A:0.5,B:0.5):1.5,C:1.5);";
+    let s = "((((A:0.5,B:0.5):1.5,C:1.5):0.5,(D:2,E:0.5):0.5):2.5,F:2.5);";
+    //let s = re.replace_all(string_with_comments, "");
+    //let s = stripped_contents;
     //println!("{}", tokens[0]);
     let tokens = tokenize(&s);
     //let tokens = tokenize(&stripped_contents);
@@ -319,9 +320,13 @@ fn main() {
     //let right = &slice[(ps+1)..];
 
 
+
     let root = parse_newick(&tokens);
     println!("root tree: {:?}", &root);
     println!("taxon labels: \t {:?}", taxon_labels(&root));
+
+    let options = Options::default();
+    microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
 }
 
 
