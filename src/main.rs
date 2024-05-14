@@ -20,6 +20,7 @@ pub struct Branch {
 #[derive(Debug, Default)]
 pub struct Node {
     index: i32, 
+    label: String,
     //parent: RefCell<Weak<Branch>>,
     children: RefCell<Vec<Rc<Branch>>>,
 }
@@ -77,18 +78,21 @@ fn stripcomments(contents: &str) -> String {
 fn dummy() -> Rc<Node> {
     let root_node = Rc::new(Node {
         index: 3,
+        label: "".to_string(),
         //parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
 
     let leaf1 = Rc::new(Node {
         index: 1,
+        label: "Homo sapiens".to_string(),
         //parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
 
     let leaf2 = Rc::new(Node {
         index: 2,
+        label: "Homo erectus".to_string(),
         //parent: RefCell::new(Weak::new()),
         children: RefCell::new(vec![]),
     });
@@ -115,12 +119,107 @@ fn dummy() -> Rc<Node> {
     return root_node
 }
 
-fn parse_newick() -> Rc<Node> {
+fn parse_newick(tokens: &[String]) -> Rc<Node> {
     let node = Rc::new(Node {
         index: 1,
+        label: "".to_string(),
         children: RefCell::new(vec![]),
     });
+    // strip semicolon
+    let n_minus_three = tokens.len() - 3;
+    let slice = &tokens[1..n_minus_three];
+    let (left, right) = left_right_tokens(&slice);
+    
+    if !left.is_empty(){
+        if left.last().expect("reason").starts_with(':'){
+            // add internal edge
+            internaledge(left, &node); 
+        }else{
+            // add terminal edge 
+            terminaledge(left, &node);
+        }
+    } 
+    
+    if !right.is_empty(){
+        if right.last().expect("reason").starts_with(':'){
+            // add internal edge
+            internaledge(right, &node); 
+        }else{
+            // add terminal edge 
+            terminaledge(right, &node);
+        }
+    }
+
     return node
+}
+
+fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
+    println!("tokens for terminal: \t {:?}", tokens);
+    assert!(tokens.len() == 1);
+
+    let end_token = tokens.last().expect("reason");
+    let l = parse_brlen(end_token);
+    let species_name = parse_speciesname(end_token);
+
+    let node = Rc::new(Node {
+        index: 1,
+        label: species_name.to_string(),
+        children: RefCell::new(vec![]),
+    });
+    let branch1 = Rc::new(Branch {
+        index: 1,
+        time: l,
+        outbounds: RefCell::new(Rc::clone(&node)),
+    });
+    parent_node.children.borrow_mut().push(Rc::clone(&branch1));
+    
+}
+
+fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
+    let l = parse_brlen(tokens.last().expect("reason"));
+
+    // strip parentheses
+    let n_minus_two = tokens.len() - 2;
+    println!("before slice: {:?}", &tokens);
+    let slice = &tokens[1..n_minus_two];
+    println!("after slice: {:?}", &slice);
+
+    // add a new internal node and branch
+    let node = Rc::new(Node {
+        index: 1,
+        label: "".to_string(),
+        children: RefCell::new(vec![]),
+    });
+    let branch1 = Rc::new(Branch {
+        index: 1,
+        time: l,
+        outbounds: RefCell::new(Rc::clone(&node)),
+    });
+    parent_node.children.borrow_mut().push(Rc::clone(&branch1));
+    
+    let (left, right) = left_right_tokens(&slice);
+   
+    println!("left: \t {:?}", &left);
+    println!("right: \t {:?}", &right);
+    if !left.is_empty(){
+        if left.last().expect("reason").starts_with(':'){
+            // add internal edge
+            internaledge(left, &node); 
+        }else{
+            // add terminal edge 
+            terminaledge(left, &node);
+        }
+    } 
+    
+    if !right.is_empty(){
+        if right.last().expect("reason").starts_with(':'){
+            // add internal edge
+            internaledge(right, &node); 
+        }else{
+            // add terminal edge 
+            terminaledge(right, &node);
+        }
+    }
 }
 
 fn find_comma(tokens: &[String]) -> usize {
@@ -140,7 +239,7 @@ fn find_comma(tokens: &[String]) -> usize {
             return i
         }
     }
-
+    println!("tokens before crash: {:?}", tokens);
     panic!("crash and burn");
 }
 
@@ -152,7 +251,7 @@ fn left_right_tokens(tokens: &[String]) -> (&[String], &[String]) {
 
     //let slice = &tokens[1..n_minus_two];
 
-    let left = &tokens[1..ps];
+    let left = &tokens[0..ps];
     let right = &tokens[(ps+1)..];
 
     return (left, right)
@@ -166,6 +265,35 @@ fn parse_brlen(token: &str) -> f64 {
     return branch_length
 }
 
+fn parse_speciesname(token: &str) -> &str {
+    let colon_pos = token.find(':').unwrap();
+
+    let species_name = &token[..colon_pos];
+    return species_name
+}
+
+fn taxon_labels(root: &Rc<Node>) -> Vec<String> {
+    let mut taxa: Vec<String> = vec![];
+
+    for child_branch in root.children.borrow().iter(){
+        taxon_labels_po(&mut taxa, &child_branch.outbounds.borrow());
+    }
+    return taxa
+}
+
+fn taxon_labels_po(taxa: &mut Vec<String>, node: &Rc<Node>){
+    if node.children.borrow().is_empty(){
+        taxa.push(node.label.clone());
+    }else{
+        for child_branch in node.children.borrow().iter(){
+            //child_node = child_branch.outbounds.borrow();
+            taxon_labels_po(taxa, &child_branch.outbounds.borrow());
+        }
+    }
+}
+
+
+
 fn main() {
     println!("Hello, world!");
 
@@ -176,7 +304,7 @@ fn main() {
 
     //println!("With text: \n {stripped_contents}");
 
-    let s = "(((A:0.5,B:0.5):0.5):1.0,C:1.5);";
+    let s = "((A:0.5,B:0.5):1.5,C:1.5);";
     //println!("{}", tokens[0]);
     let tokens = tokenize(&s);
     //let tokens = tokenize(&stripped_contents);
@@ -186,39 +314,14 @@ fn main() {
         println!("{token} \t, is comma = {}", isp);
     }
   
-    let root_node = dummy();
-
-    println!("{:?}", root_node);
-    println!("{:?}", root_node.children.borrow()[0].outbounds.borrow());
-
-    let n_tokens = tokens.len();
-    let n_minus_two = n_tokens - 2;
-
-    let slice = &tokens[1..n_minus_two];
-
-    println!("{:?}", &slice);
-    let ps = find_comma(&slice);
-
-    println!("comma position: \t {ps}"); 
 
     //let left = &slice[1..ps];
     //let right = &slice[(ps+1)..];
-    //
-    let (left, right) = left_right_tokens(&slice);
 
-    println!("left: \t {:?}", &left);
-    println!("right: \t {:?}", &right);
 
-    let last_token = &left.last().unwrap();
-    println!("last token: \t {:?}", &last_token);
-    println!("position of colon: \t {:?}", last_token.find(':').unwrap());
-    println!("position of colon in \"HomoSapiens:0.123\": \t {:?}", "HomoSapiens:0.123".find(':').unwrap());
-
-    let fake_token = "Homo_sapiens:15.123";
-    println!("fake token: \t {}", &fake_token);
-    println!("with branch length: \t {}", parse_brlen(fake_token));
-    let v: Vec<i32> = Vec::new();
-
+    let root = parse_newick(&tokens);
+    println!("root tree: {:?}", &root);
+    println!("taxon labels: \t {:?}", taxon_labels(&root));
 }
 
 
