@@ -1,5 +1,5 @@
 use crate::tree::*;
-use std::rc::{Rc, Weak};
+use std::rc::Rc;
 
 pub fn taxon_labels(root: &Rc<Node>) -> Vec<String> {
     let mut taxa: Vec<String> = vec![];

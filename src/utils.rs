@@ -6,5 +6,3 @@ fn stripcomments(contents: &str) -> String {
 
     return stripped_contents.to_string();
 }
-
-

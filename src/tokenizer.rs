@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use crate::tree::*;
 
 
 pub fn tokenize(s: &str) -> Vec<String> {
@@ -40,8 +39,6 @@ pub fn tokenize(s: &str) -> Vec<String> {
             }
         }
     }
-
-    let node = Node::default();
 
     return tokens;
 }

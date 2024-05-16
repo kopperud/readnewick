@@ -1,47 +1,24 @@
 use std::{fs, env};
 use std::io::{self, prelude::*, BufReader};
-use std::rc::{Rc, Weak};
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use microbench::{self, Options};
-use regex::Regex;
 use bitvec::prelude::*;
 
 use crate::parser::*;
 use crate::utils::*;
 use crate::tokenizer::*;
-use crate::tree::*;
 use crate::taxonlabels::*;
+use crate::splits::*;
 
 pub mod parser;
 pub mod utils;
 pub mod tokenizer;
 pub mod tree;
 pub mod taxonlabels;
+pub mod splits;
 
 
-fn postorder_splits(
-    splits: &mut Vec<BitVec>, 
-    all_taxa: &Vec<String>,
-    node: &Rc<Node>
-    ){
-    let children = node.children.borrow();
 
-    if !children.is_empty(){
-        let split_taxa = taxon_labels(&node);
-        let mut split: BitVec = BitVec::new();
-
-        for taxon in all_taxa {
-            let x = split_taxa.contains(&taxon);
-            split.push(x);
-        }
-
-        splits.push(split);
-
-        for child_branch in children.iter(){
-            postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
-        }
-    }
-}
 
 
 fn main() {
@@ -62,7 +39,6 @@ fn main() {
 
     println!("taxon labels: \t {:?}", taxon_labels(&root));
 
-    let options = Options::default();
 
     let n_tips = taxon_labels(&root).len();
     println!("number of taxa: {}", n_tips);
@@ -86,6 +62,7 @@ fn main() {
     //for (key, value) in h{
      //   println!("key: {:?}, \t val: {}", &key, &value);
    // }
+    //let options = Options::default();
     //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
 }
 
