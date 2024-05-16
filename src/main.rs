@@ -2,12 +2,12 @@ use std::fs;
 use std::env;
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use microbench::{self, Options};
 use regex::Regex;
+use bitvec::prelude::*;
 
 //use std::{cell::RefCell, rc::Rc};
-
 //pub type NodeRef = Rc<RefCell<Node>>;
 //pub type BranchRef = Rc<RefCell<Branch>>;
 
@@ -37,8 +37,8 @@ fn tokenize(s: &str) -> Vec<String> {
     special_tokens.insert(')');
     special_tokens.insert(';');
     special_tokens.insert(',');
-    special_tokens.insert('[');
-    special_tokens.insert(']');
+    //special_tokens.insert('[');
+    //special_tokens.insert(']');
 
 
     let chars = s.chars();
@@ -278,9 +278,7 @@ fn parse_speciesname(token: &str) -> &str {
 fn taxon_labels(root: &Rc<Node>) -> Vec<String> {
     let mut taxa: Vec<String> = vec![];
 
-    for child_branch in root.children.borrow().iter(){
-        taxon_labels_po(&mut taxa, &child_branch.outbounds.borrow());
-    }
+    taxon_labels_po(&mut taxa, root);
     return taxa
 }
 
@@ -291,12 +289,34 @@ fn taxon_labels_po(taxa: &mut Vec<String>, node: &Rc<Node>){
         taxa.push(node.label.clone());
     }else{
         for child_branch in children.iter(){
-            //child_node = child_branch.outbounds.borrow();
             taxon_labels_po(taxa, &child_branch.outbounds.borrow());
         }
     }
 }
 
+fn postorder_splits(
+    splits: &mut Vec<BitVec>, 
+    all_taxa: &Vec<String>,
+    node: &Rc<Node>
+    ){
+    let children = node.children.borrow();
+
+    if !children.is_empty(){
+        let split_taxa = taxon_labels(&node);
+        let mut split: BitVec = BitVec::new();
+
+        for taxon in all_taxa {
+            let x = split_taxa.contains(&taxon);
+            split.push(x);
+        }
+
+        splits.push(split);
+
+        for child_branch in children.iter(){
+            postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
+        }
+    }
+}
 
 
 fn main() {
@@ -319,18 +339,36 @@ fn main() {
         println!("{token} \t, is comma = {}", isp);
     }
   
-
-    //let left = &slice[1..ps];
-    //let right = &slice[(ps+1)..];
-
-
-
     let root = parse_newick(&tokens);
-    //println!("root tree: {:?}", &root);
+    let all_taxa = taxon_labels(&root);
+
     println!("taxon labels: \t {:?}", taxon_labels(&root));
 
     let options = Options::default();
-    microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
+    //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
+
+    let n_tips = taxon_labels(&root).len();
+    println!("number of taxa: {}", n_tips);
+
+    let mut splits: Vec<BitVec> = Vec::new();
+
+    postorder_splits(&mut splits, &all_taxa, &root);
+
+    for split in &splits{
+        println!("split: \t {:?}", &split);
+    }
+
+
+
+    let mut h: HashMap<BitVec, u64> = HashMap::new();
+    for split in &splits{
+        *h.entry(split.clone()).or_insert(0) += 1;
+    }
+    println!("summary hash map: \t");
+    for (key, value) in h{
+        println!("key: {:?}, \t val: {}", &key, &value);
+    }
+
 }
 
 
