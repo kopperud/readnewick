@@ -21,7 +21,7 @@ pub fn tokenize(s: &str) -> Vec<String> {
     while let Some(_) = iter.peek(){
         if let Some(c) = iter.next(){
 
-            println!("{:?}", &c);
+            //println!("{:?}", &c);
             if c != 0xA as char {
 
                 let is_special = special_tokens.contains(&c);

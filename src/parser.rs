@@ -1,7 +1,5 @@
 use std::rc::{Rc, Weak};
 use std::cell::RefCell;
-//use crate::{Node, Branch};
-
 use crate::tree::*;
 
 pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
@@ -15,8 +13,6 @@ pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
     let slice = &tokens[1..n_minus_two];
     let (left, right) = partition(&slice);
 
-    println!("right from root: \t {:?}", &right);
-    
     if !left.is_empty(){
         //if left.last().expect("reason").starts_with(':'){
         if left.len() == 1{

@@ -10,32 +10,14 @@ use crate::parser::*;
 use crate::utils::*;
 use crate::tokenizer::*;
 use crate::tree::*;
+use crate::taxonlabels::*;
 
 pub mod parser;
 pub mod utils;
 pub mod tokenizer;
 pub mod tree;
+pub mod taxonlabels;
 
-
-
-fn taxon_labels(root: &Rc<Node>) -> Vec<String> {
-    let mut taxa: Vec<String> = vec![];
-
-    taxon_labels_po(&mut taxa, root);
-    return taxa
-}
-
-fn taxon_labels_po(taxa: &mut Vec<String>, node: &Rc<Node>){
-    let children = node.children.borrow();
-
-    if children.is_empty(){
-        taxa.push(node.label.clone());
-    }else{
-        for child_branch in children.iter(){
-            taxon_labels_po(taxa, &child_branch.outbounds.borrow());
-        }
-    }
-}
 
 fn postorder_splits(
     splits: &mut Vec<BitVec>, 
@@ -74,19 +56,13 @@ fn main() {
     //let s = re.replace_all(string_with_comments, "");
     //let s = stripped_contents;
     let tokens = tokenize(&stripped_contents);
-
-    for token in tokens.iter(){
-        let isp = token == ",";
-        println!("{token} \t, is comma = {}", isp);
-    }
-  
+ 
     let root = parse_newick(&tokens);
     let all_taxa = taxon_labels(&root);
 
     println!("taxon labels: \t {:?}", taxon_labels(&root));
 
     let options = Options::default();
-    //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
 
     let n_tips = taxon_labels(&root).len();
     println!("number of taxa: {}", n_tips);
@@ -95,9 +71,9 @@ fn main() {
 
     postorder_splits(&mut splits, &all_taxa, &root);
 
-    for split in &splits{
-        println!("split: \t {:?}", &split);
-    }
+    //for split in &splits{
+    //    println!("split: \t {:?}", &split);
+   // }
 
 
 
@@ -105,11 +81,12 @@ fn main() {
     for split in &splits{
         *h.entry(split.clone()).or_insert(0) += 1;
     }
-    println!("summary hash map: \t");
-    for (key, value) in h{
-        println!("key: {:?}, \t val: {}", &key, &value);
-    }
 
+    println!("summary hash map: \t");
+    //for (key, value) in h{
+     //   println!("key: {:?}, \t val: {}", &key, &value);
+   // }
+    //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
 }
 
 
