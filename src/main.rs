@@ -49,17 +49,21 @@ fn tokenize(s: &str) -> Vec<String> {
     while let Some(_) = iter.peek(){
         if let Some(c) = iter.next(){
 
-            let is_special = special_tokens.contains(&c);
-            token.push(c);
+            println!("{:?}", &c);
+            if c != 0xA as char {
 
-            if is_special{
-                tokens.push(token);
-                token = "".to_string();
-            }else{
-                let next = iter.peek().expect("reason");
-                if special_tokens.contains(next){
+                let is_special = special_tokens.contains(&c);
+                token.push(c);
+
+                if is_special{
                     tokens.push(token);
                     token = "".to_string();
+                }else{
+                    let next = iter.peek().expect("should have been able to peek to next char");
+                    if special_tokens.contains(next){
+                        tokens.push(token);
+                        token = "".to_string();
+                    }
                 }
             }
         }
@@ -117,7 +121,6 @@ fn dummy() -> Rc<Node> {
     root_node.children.borrow_mut().push(Rc::clone(&branch2));
     //*leaf2.parent.borrow_mut() = Rc::downgrade(&branch2);
 
-    println!("{:?}", leaf1.children.borrow().len());
     return root_node
 }
 
@@ -145,7 +148,7 @@ fn parse_newick(tokens: &[String]) -> Rc<Node> {
     
     if !right.is_empty(){
         //if right.last().expect("reason").starts_with(':'){
-        if left.len() == 1{
+        if right.len() == 1{
             terminaledge(right, &node);
         }else{
             internaledge(right, &node); 
@@ -179,7 +182,7 @@ fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
 
 fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     // strip parentheses
-    println!("tokens: \t {:?}", &tokens);
+    //println!("tokens: \t {:?}", &tokens);
     let l = parse_brlen(tokens.last().expect("reason"));
 
     let n_minus_one = tokens.len() - 1;
@@ -204,8 +207,8 @@ fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     
     let (left, right) = partition(&slice);
    
-    println!("left: \t {:?}", &left);
-    println!("right: \t {:?}", &right);
+    //println!("left: \t {:?}", &left);
+    //println!("right: \t {:?}", &right);
     if !left.is_empty(){
         //if left.last().expect("reason").starts_with(':'){
         if left.len() == 1{
@@ -248,9 +251,10 @@ fn find_comma(tokens: &[String]) -> usize {
 
 fn partition(tokens: &[String]) -> (&[String], &[String]) {
     let ps = find_comma(&tokens);
+    let n_tokens = tokens.len();
 
     let left = &tokens[0..ps];
-    let right = &tokens[(ps+1)..];
+    let right = &tokens[(ps+1)..(n_tokens-1)];
 
     return (left, right)
 }
@@ -281,10 +285,12 @@ fn taxon_labels(root: &Rc<Node>) -> Vec<String> {
 }
 
 fn taxon_labels_po(taxa: &mut Vec<String>, node: &Rc<Node>){
-    if node.children.borrow().is_empty(){
+    let children = node.children.borrow();
+
+    if children.is_empty(){
         taxa.push(node.label.clone());
     }else{
-        for child_branch in node.children.borrow().iter(){
+        for child_branch in children.iter(){
             //child_node = child_branch.outbounds.borrow();
             taxon_labels_po(taxa, &child_branch.outbounds.borrow());
         }
@@ -294,11 +300,9 @@ fn taxon_labels_po(taxa: &mut Vec<String>, node: &Rc<Node>){
 
 
 fn main() {
-    println!("Hello, world!");
-
-    let contents = fs::read_to_string("primates.tre").expect("should have been able to readfile");
-
-    let stripped_contents = stripcomments(&contents); 
+    //let contents = fs::read_to_string("primates.tre").expect("should have been able to readfile");
+    //let stripped_contents = stripcomments(&contents); 
+    let stripped_contents = fs::read_to_string("ungulates.tre").expect("should have been able to readfile");
 
 
     //println!("With text: \n {stripped_contents}");
@@ -307,8 +311,8 @@ fn main() {
     //let s = re.replace_all(string_with_comments, "");
     //let s = stripped_contents;
     //println!("{}", tokens[0]);
-    let tokens = tokenize(&s);
-    //let tokens = tokenize(&stripped_contents);
+    //let tokens = tokenize(&s);
+    let tokens = tokenize(&stripped_contents);
 
     for token in tokens.iter(){
         let isp = token == ",";
@@ -322,7 +326,7 @@ fn main() {
 
 
     let root = parse_newick(&tokens);
-    println!("root tree: {:?}", &root);
+    //println!("root tree: {:?}", &root);
     println!("taxon labels: \t {:?}", taxon_labels(&root));
 
     let options = Options::default();
