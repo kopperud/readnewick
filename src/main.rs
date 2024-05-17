@@ -4,6 +4,8 @@ use std::io::{self, prelude::*, BufReader};
 use std::collections::HashMap;
 use microbench::{self, Options};
 use bitvec::prelude::*;
+use indicatif::ProgressBar;
+
 
 use crate::parser::*;
 use crate::utils::*;
@@ -62,6 +64,8 @@ fn main() -> io::Result<()> {
 
     let mut n_trees: f64 = 0.0;
 
+    let bar = ProgressBar::new(5002);
+   
     for (i, line) in f.lines().enumerate(){
         if i > 0 {
             let line_string = line.unwrap();
@@ -71,7 +75,7 @@ fn main() -> io::Result<()> {
             let tokens = tokenize(&stripped_contents);
             let root = parse_newick(&tokens);
             let all_taxa = taxon_labels(&root);
-            println!("all taxa: \t {:?}", &all_taxa);
+            //println!("all taxa: \t {:?}", &all_taxa);
 
             // calculate the splits
             let mut splits: Vec<BitVec> = Vec::new();
@@ -82,12 +86,14 @@ fn main() -> io::Result<()> {
                 *h.entry(split.clone()).or_insert(0) += 1;
             }
 
-            for split in splits{
-               println!("{:?}", split); 
-            }
+            //for split in splits{
+            //   println!("{:?}", split); 
+            //}
             n_trees += 1.0;
+            bar.inc(1);
         }
     }
+    bar.finish();
      
     println!("summary hash map: \t");
     for (key, value) in &h{
