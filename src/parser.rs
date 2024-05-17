@@ -50,7 +50,7 @@ fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
 
 fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     // strip parentheses
-    println!("tokens for internaledge: \t {:?}", &tokens);
+    //println!("tokens for internaledge: \t {:?}", &tokens);
     let l = parse_brlen(tokens.last().expect("reason"));
 
     let n_minus_one = tokens.len() - 1;
@@ -132,9 +132,9 @@ fn partition(tokens: &[String]) -> Vec<&[String]> {
         .unwrap();
     sides.push(side);
 
-    for side in &sides{
-        println!("side: \t {:?}", side);
-    }
+    //for side in &sides{
+    //    println!("side: \t {:?}", side);
+    //}
 
     //let mut end: usize = *comma_positions.first().unwrap();
     

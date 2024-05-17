@@ -57,23 +57,18 @@ fn main() -> io::Result<()> {
     //}
 
 
-
-    //BufRead
-
     let f = File::open("primates_cytb_JC_run_1.trees")?;
     let f = BufReader::new(f);
+
+    let mut n_trees: f64 = 0.0;
 
     for (i, line) in f.lines().enumerate(){
         if i > 0 {
             let line_string = line.unwrap();
-          //  println!("{}", &line_string);
             let newickstring = find_newick_string(line_string);
-            //println!("{}", &newickstring);
 
             let stripped_contents = stripcomments(&newickstring); 
-            //println!("stripped: \t {:?}", &stripped_contents);
             let tokens = tokenize(&stripped_contents);
-            println!("tokens: \t {:?}", &tokens);
             let root = parse_newick(&tokens);
             let all_taxa = taxon_labels(&root);
             println!("all taxa: \t {:?}", &all_taxa);
@@ -90,14 +85,28 @@ fn main() -> io::Result<()> {
             for split in splits{
                println!("{:?}", split); 
             }
+            n_trees += 1.0;
         }
     }
      
     println!("summary hash map: \t");
-  //  for (key, value) in h{
- //       println!("key: {:?}, \t val: {}", &key, &value);
-//    }
+    for (key, value) in &h{
+        println!("key: {:?}, \t val: {}", &key, &value);
+    }
 
+    // calculate split frequencies
+    let mut split_frequencies: HashMap<BitVec, f64> = HashMap::new();
+    for (key, value) in h{
+        let split_occurrences = value as f64;
+        let split_frequency = split_occurrences / n_trees;
+        *split_frequencies.entry(key.clone()).or_insert(0.0) = split_frequency;
+    }
+
+    println!("split frequencies across posterior sample: \t");
+    println!("split \t frequency");
+    for (key, value) in &split_frequencies{
+        println!("{} \t {}", &key.to_string().replace(", ", ""), &value);
+    }
     //let options = Options::default();
     //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
     Ok(())
