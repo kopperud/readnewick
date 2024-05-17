@@ -9,23 +9,17 @@ pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
         children: RefCell::new(vec![]),
     });
     // strip semicolon
-    let n_minus_two = tokens.len() - 2;
-    let slice = &tokens[1..n_minus_two];
-    let (left, right) = partition(&slice);
+    let n_minus_one = tokens.len() - 1;
+    let slice = &tokens[1..n_minus_one];
+    let sides = partition(&slice);
 
-    if !left.is_empty(){
-        if left.len() == 1{
-            terminaledge(left, &node);
-        }else{
-            internaledge(left, &node); 
-        }
-    } 
-    
-    if !right.is_empty(){
-        if right.len() == 1{
-            terminaledge(right, &node);
-        }else{
-            internaledge(right, &node); 
+    for side in sides{
+        if !side.is_empty(){
+            if side.len() == 1{
+                terminaledge(side, &node);
+            }else{
+                internaledge(side, &node); 
+            }
         }
     }
 
@@ -56,6 +50,7 @@ fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
 
 fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     // strip parentheses
+    println!("tokens for internaledge: \t {:?}", &tokens);
     let l = parse_brlen(tokens.last().expect("reason"));
 
     let n_minus_one = tokens.len() - 1;
@@ -73,30 +68,25 @@ fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
         outbounds: RefCell::new(Rc::clone(&node)),
     });
     parent_node.children.borrow_mut().push(Rc::clone(&branch1));
-    
-    let (left, right) = partition(&slice);
-   
-    if !left.is_empty(){
-        if left.len() == 1{
-            terminaledge(left, &node);
-        }else{
-            internaledge(left, &node); 
-        }
-    } 
-    
-    if !right.is_empty(){
-        if right.len() == 1{
-            terminaledge(right, &node);
-        }else{
-            internaledge(right, &node); 
+
+    let sides = partition(&slice);
+
+    for side in sides{
+        if !side.is_empty(){
+            if side.len() == 1{
+                terminaledge(side, &node);
+            }else{
+                internaledge(side, &node); 
+            }
         }
     }
 }
 
-fn find_comma(tokens: &[String]) -> usize {
+fn find_separators(tokens: &[String]) -> Vec<usize> {
     let mut ps = 0;
 
     let n_tokens = tokens.len();
+    let mut comma_positions: Vec<usize> = Vec::new();
 
     for i in 0..n_tokens {
         let token = &tokens[i];
@@ -107,21 +97,52 @@ fn find_comma(tokens: &[String]) -> usize {
         }
 
         if (token == ",") & (ps == 0){
-            return i
+            comma_positions.push(i);
         }
     }
-    println!("tokens before crash: {:?}", tokens);
-    panic!("crash and burn");
+
+    if comma_positions.is_empty(){
+        println!("tokens before crash: {:?}", tokens);
+        panic!("crash and burn");
+    }
+
+    return comma_positions
 }
 
-fn partition(tokens: &[String]) -> (&[String], &[String]) {
-    let ps = find_comma(&tokens);
+fn partition(tokens: &[String]) -> Vec<&[String]> {
+    //let ps = find_comma(&tokens);
     let n_tokens = tokens.len();
 
-    let left = &tokens[0..ps];
-    let right = &tokens[(ps+1)..(n_tokens-1)];
+    let comma_positions = find_separators(&tokens); 
+    let mut start: usize = 0;
 
-    return (left, right)
+    
+
+    let mut sides: Vec<&[String]> = Vec::new(); 
+    for cp in comma_positions{
+         let side = &tokens
+             .get(start..cp)
+             .unwrap(); 
+        start = cp + 1;
+         
+        sides.push(side);
+    }
+    let side = &tokens
+        .get(start..(n_tokens-1))
+        .unwrap();
+    sides.push(side);
+
+    for side in &sides{
+        println!("side: \t {:?}", side);
+    }
+
+    //let mut end: usize = *comma_positions.first().unwrap();
+    
+    //let left = &tokens[0..ps];
+    //let right = &tokens[(ps+1)..(n_tokens-1)];
+
+    //return (left, right)
+    return sides
 }
 
 fn parse_brlen(token: &str) -> f64 {
