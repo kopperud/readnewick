@@ -1,8 +1,10 @@
 use regex::Regex;
+use once_cell::sync::Lazy;
 
 pub fn stripcomments(contents: &str) -> String {
-    let re = Regex::new(r"\[.*?\]").unwrap();
-    let stripped_contents = re.replace_all(&contents, "");
+    //let re = Regex::new(r"\[.*?\]").unwrap();
+    static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\[.*?\]").unwrap());
+    let stripped_contents = RE.replace_all(&contents, "");
 
     return stripped_contents.to_string();
 }

@@ -6,7 +6,7 @@ use bitvec::prelude::*;
 use indicatif::ProgressBar;
 use std::convert::TryFrom;
 use std::rc::Rc;
-
+use regex::Regex;
 
 
 use crate::parser::*;
@@ -61,7 +61,7 @@ fn main() -> io::Result<()> {
         .expect("input is not two lines long")
         .expect("could not read second line");
         //.unwrap();
-    let root = parse_tree(second_line);
+    let root = parse_tree(second_line.clone());
     let all_taxa = taxon_labels(&root);
 
     let mut split_frequencies_per_file = vec![];
@@ -155,6 +155,25 @@ fn main() -> io::Result<()> {
 */
             //let options = Options::default();
     //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
+
+    /*
+    let newickstring = find_newick_string(second_line.clone());
+
+    let stripped_contents = stripcomments(&newickstring); 
+    let tokens = tokenize(&stripped_contents);
+    let root = parse_newick(&tokens);
+
+    let options = Options::default();
+    microbench::bench(&options, "find newick string", || find_newick_string(second_line.clone()));
+    microbench::bench(&options, "strip comments", || stripcomments(&newickstring));
+    microbench::bench(&options, "tokenize", || tokenize(&stripped_contents));
+    microbench::bench(&options, "parse tokens", || parse_newick(&tokens));
+    microbench::bench(&options, "all steps combined", || parse_tree(second_line.clone()));
+
+    
+    microbench::bench(&options, "create a regex", || Regex::new(r"\[.*?\]").unwrap());
+    */
+
     Ok(())
 }
 
