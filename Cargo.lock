@@ -289,21 +289,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
-name = "readnewick"
-version = "0.1.0"
-dependencies = [
- "bitvec",
- "bytecount",
- "clap",
- "csv",
- "indicatif",
- "microbench",
- "once_cell",
- "regex",
- "wild",
-]
-
-[[package]]
 name = "regex"
 version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -356,6 +341,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "splitfrequencies"
+version = "0.1.0"
+dependencies = [
+ "bitvec",
+ "bytecount",
+ "clap",
+ "csv",
+ "indicatif",
+ "microbench",
+ "once_cell",
+ "regex",
+ "wild",
 ]
 
 [[package]]

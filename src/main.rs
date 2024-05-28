@@ -23,7 +23,7 @@ pub mod linecount;
 
 fn main() -> io::Result<()> {
 
-    let cmd = Command::new("readnewick")
+    let cmd = Command::new("splitfrequencies")
         .about("this program reads tree files")
         .arg(Arg::new("input")
             .short('i')
@@ -34,7 +34,7 @@ fn main() -> io::Result<()> {
             .help("tree files used for the program")
             .action(ArgAction::Append)
             .value_parser(clap::value_parser!(String)))
-        //.get_matches_from(vec!["readnewick", "-i", "file1.tre", "file2.tre"]);
+        //.get_matches_from(vec!["splitfrequencies", "-i", "file1.tre", "file2.tre"]);
         //
         .arg(Arg::new("output")
             .short('o')
