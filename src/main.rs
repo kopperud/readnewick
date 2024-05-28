@@ -47,7 +47,8 @@ fn main() -> io::Result<()> {
     let filenames = args.clone();
 
     let mut global_splits: HashSet<BitVec> = HashSet::new();
-    let burnin = 500;
+    //let burnin = 500;
+    let burnin = 0.1;
     //let mut h: HashMap<BitVec, u64> = HashMap::new();
 
     // read first tree
@@ -83,7 +84,7 @@ fn main() -> io::Result<()> {
         let mut n_trees = 1.0;
         
         for (i, line) in lines.enumerate(){
-            if (i > 0) & (i > burnin) {
+            if (i > 0) & ((i as f64) < burnin * n_lines as f64) {
                 let line_string: String = line.unwrap();
                 let root = parse_tree(line_string);
                 //let all_taxa = taxon_labels(&root);
