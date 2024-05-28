@@ -1,4 +1,3 @@
-
 pub fn tokenize(s: &str) -> Vec<&str> {
     let mut tokens: Vec<&str> = Vec::new();
     const SPECIAL_TOKENS: &[char] = &['(', ')', ',', ';'];

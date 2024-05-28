@@ -55,12 +55,12 @@ fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
         label: species_name.to_string(),
         children: RefCell::new(vec![]),
     });
-    let branch1 = Rc::new(Branch {
+    /* let branch1 = Rc::new(Branch {
         index: 1,
         time: l,
         outbounds: RefCell::new(Rc::clone(&node)),
-    });
-    parent_node.children.borrow_mut().push(Rc::clone(&branch1));
+    });*/
+    parent_node.children.borrow_mut().push(Rc::clone(&node));
     
 }
 
@@ -80,12 +80,13 @@ fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
         label: "".to_string(),
         children: RefCell::new(vec![]),
     });
-    let branch1 = Rc::new(Branch {
+    /*let branch1 = Rc::new(Branch {
         index: 1,
         time: l,
         outbounds: RefCell::new(Rc::clone(&node)),
     });
-    parent_node.children.borrow_mut().push(Rc::clone(&branch1));
+    */
+    parent_node.children.borrow_mut().push(Rc::clone(&node));
 
     let sides = partition(slice);
 

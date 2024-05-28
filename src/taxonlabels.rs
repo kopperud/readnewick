@@ -14,8 +14,8 @@ fn taxon_labels_po(taxa: &mut Vec<String>, node: &Rc<Node>){
     if children.is_empty(){
         taxa.push(node.label.clone());
     }else{
-        for child_branch in children.iter(){
-            taxon_labels_po(taxa, &child_branch.outbounds.borrow());
+        for child in children.iter(){
+            taxon_labels_po(taxa, &child);
         }
     }
 }

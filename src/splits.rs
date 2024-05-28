@@ -12,8 +12,9 @@ pub fn root_splits(
     let children = node.children.borrow();
    
     if !children.is_empty(){
-        for child_branch in children.iter(){
-            postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
+        for child in children.iter(){
+            //postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
+            postorder_splits(splits, all_taxa, &child);
         }
     }
 }
@@ -35,8 +36,8 @@ pub fn postorder_splits(
 
         splits.push(split);
 
-        for child_branch in children.iter(){
-            postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
+        for child in children.iter(){
+            postorder_splits(splits, all_taxa, &child);
         }
     }
 }
