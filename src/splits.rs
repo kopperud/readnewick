@@ -30,7 +30,7 @@ pub fn postorder_splits(
         let mut split: BitVec = BitVec::new();
 
         for taxon in all_taxa {
-            let x = split_taxa.contains(&taxon);
+            let x = split_taxa.contains(taxon);
             split.push(x);
         }
 

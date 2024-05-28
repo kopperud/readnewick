@@ -47,7 +47,7 @@ fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
     assert!(tokens.len() == 1);
 
     let end_token = tokens.last().expect("reason");
-    let l = parse_brlen(end_token);
+    //let l = parse_brlen(end_token);
     let species_name = parse_speciesname(end_token);
 
     let node = Rc::new(Node {
@@ -67,7 +67,7 @@ fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
 fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
     // strip parentheses
     //println!("tokens for internaledge: \t {:?}", &tokens);
-    let l = parse_brlen(tokens.last().expect("reason"));
+    //let l = parse_brlen(tokens.last().expect("reason"));
 
     //let slice = &tokens[1..n_minus_one];
     let mut slice = tokens.clone();
