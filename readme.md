@@ -33,9 +33,9 @@ Initial step: compute an ordered vector of all tip labels in the second line of 
 3. Perform a traversal of the subtree descending from `N`. If a tip is visited, assign a 1 in the bit vector at the index representing the tip.
 5. Store the bit vector representing the split
 
-Repeat the above sub-algorithm for all internal nodes `N`, including the root.
+Repeat the above sub-algorithm for all internal nodes `N`, except the root.
 The left and right subtrees descending from the root will have complementary splits. 
 For example, `[1,1,0,0,0]` for the left subtree, and `[0,0,1,1,1]` for the right subtree.
 
-Trivial tip splits (i.e. `[1,0,0,...]`...) are not included. The trivial root split (i.e. `[1,1,1,...]`) is included. Symmetric or complementary are not always added, i.e. if the split [1,0,0,1] is recorded, it's not guaranteed that the split [0,1,1,0] is also included.
+Trivial tip splits (i.e. `[1,0,0,...]`...) are not included. Symmetric or complementary are not always added, i.e. if the split [1,0,0,1] is recorded, it's not guaranteed that the split [0,1,1,0] is also included.
 

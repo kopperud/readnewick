@@ -50,8 +50,11 @@ fn main() -> io::Result<()> {
             .action(ArgAction::Set)
             .value_parser(clap::value_parser!(f64))
             .default_value("0.1"))
-            .about("hello")
+           //.value_parser(clap::value_parser!(char)))
+        //.about("hello")
        .get_matches();
+
+
 
     let mut innames: Vec<Vec<&String>> = cmd
         .get_occurrences("input")
@@ -115,7 +118,7 @@ fn main() -> io::Result<()> {
 
                 // calculate the splits
                 let mut splits: Vec<BitVec> = Vec::new();
-                postorder_splits(&mut splits, &all_taxa, &root);
+                root_splits(&mut splits, &all_taxa, &root);
 
                 // add the splits to the dictionary
                 for split in &splits{

@@ -4,7 +4,19 @@ use bitvec::prelude::*;
 use crate::tree::*;
 use crate::taxonlabels::*;
 
-
+pub fn root_splits(
+    splits: &mut Vec<BitVec>, 
+    all_taxa: &Vec<String>,
+    node: &Rc<Node>
+    ){
+    let children = node.children.borrow();
+   
+    if !children.is_empty(){
+        for child_branch in children.iter(){
+            postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
+        }
+    }
+}
 pub fn postorder_splits(
     splits: &mut Vec<BitVec>, 
     all_taxa: &Vec<String>,
