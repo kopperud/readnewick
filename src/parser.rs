@@ -9,13 +9,13 @@ pub fn parse_tree(contents: String) -> Rc<Node> {
 
     let stripped_contents = stripcomments(&newickstring); 
     let tokens = tokenize(&stripped_contents);
-    let root = parse_newick(&tokens);
+    let root = parse_newick(tokens);
 
     return root
 }
 
 
-pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
+pub fn parse_newick(tokens: Vec<&str>) -> Rc<Node> {
     let node = Rc::new(Node {
         index: 1,
         label: "".to_string(),
@@ -24,8 +24,12 @@ pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
     
     // strip semicolon
     let n_minus_one = tokens.len() - 1;
-    let slice = &tokens[1..n_minus_one];
-    let sides = partition(&slice);
+    //let slice = &tokens[1..n_minus_one];
+    let mut slice = tokens.clone();
+    slice.remove(slice.len()-1);
+    slice.remove(0);
+
+    let sides = partition(slice);
 
     for side in sides{
         if !side.is_empty(){
@@ -40,7 +44,7 @@ pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
     return node
 }
 
-fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
+fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
     //println!("tokens for terminal: \t {:?}", tokens);
     assert!(tokens.len() == 1);
 
@@ -62,13 +66,16 @@ fn terminaledge(tokens: &[String], parent_node: &Rc<Node>){
     
 }
 
-fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
+fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
     // strip parentheses
     //println!("tokens for internaledge: \t {:?}", &tokens);
     let l = parse_brlen(tokens.last().expect("reason"));
 
     let n_minus_one = tokens.len() - 1;
-    let slice = &tokens[1..n_minus_one];
+    //let slice = &tokens[1..n_minus_one];
+    let mut slice = tokens.clone();
+    slice.remove(slice.len()-1);
+    slice.remove(0);
 
     // add a new internal node and branch
     let node = Rc::new(Node {
@@ -83,7 +90,7 @@ fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     });
     parent_node.children.borrow_mut().push(Rc::clone(&branch1));
 
-    let sides = partition(&slice);
+    let sides = partition(slice);
 
     for side in sides{
         if !side.is_empty(){
@@ -96,7 +103,7 @@ fn internaledge(tokens: &[String], parent_node: &Rc<Node>) {
     }
 }
 
-fn find_separators(tokens: &[String]) -> Vec<usize> {
+fn find_separators(tokens: Vec<&str>) -> Vec<usize> {
     let mut ps = 0;
 
     let n_tokens = tokens.len();
@@ -104,13 +111,13 @@ fn find_separators(tokens: &[String]) -> Vec<usize> {
 
     for i in 0..n_tokens {
         let token = &tokens[i];
-        if token == "(" {
+        if *token == "(" {
             ps += 1;
-        }else if token == ")" {
+        }else if *token == ")" {
             ps -= 1;
         }
 
-        if (token == ",") & (ps == 0){
+        if (*token == ",") & (ps == 0){
             comma_positions.push(i);
         }
     }
@@ -123,26 +130,41 @@ fn find_separators(tokens: &[String]) -> Vec<usize> {
     return comma_positions
 }
 
-fn partition(tokens: &[String]) -> Vec<&[String]> {
+fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
     let n_tokens = tokens.len();
 
-    let comma_positions = find_separators(&tokens); 
+    let comma_positions = find_separators(tokens.clone()); 
     let mut start: usize = 0;
 
     
 
-    let mut sides: Vec<&[String]> = Vec::new(); 
+    let mut sides: Vec<Vec<&str>> = Vec::new(); 
+
     for cp in comma_positions{
-         let side = &tokens
-             .get(start..cp)
-             .unwrap(); 
+        let mut side: Vec<&str> = Vec::new();
+        for token in tokens
+            .get(start..cp)
+            .unwrap(){
+            side.push(*token);
+        }
+         //let side = tokens
+          //   .get(start..cp)
+          //   .unwrap(); 
         start = cp + 1;
          
         sides.push(side);
     }
-    let side = &tokens
+
+    let mut side: Vec<&str> = Vec::new();
+    for token in tokens
+        .get(start..(n_tokens-1))
+        .unwrap(){
+        side.push(*token);
+    }
+    /*let side = &tokens
         .get(start..(n_tokens-1))
         .unwrap();
+    */
     sides.push(side);
 
     return sides
