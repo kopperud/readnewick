@@ -7,6 +7,8 @@ use indicatif::ProgressBar;
 use std::convert::TryFrom;
 use std::rc::Rc;
 use regex::Regex;
+use clap::{Parser, Command, Arg, ArgAction, ArgGroup};
+
 
 
 use crate::parser::*;
@@ -40,51 +42,93 @@ pub fn parse_tree(contents: String) -> Rc<Node> {
 
 fn main() -> io::Result<()> {
 
-    let args: Vec<String> = env::args().skip(1).collect();
-    dbg!(&args);
+    let cmd = Command::new("readnewick")
+        .about("this program reads tree files")
+        .arg(Arg::new("input")
+            .short('i')
+            .long("input")
+            .num_args(1..=16)
+            .value_name("FILENAMES")
+            .required(true)
+            .help("tree files used for the program")
+            .action(ArgAction::Append)
+            .value_parser(clap::value_parser!(String)))
+        //.get_matches_from(vec!["readnewick", "-i", "file1.tre", "file2.tre"]);
+        //
+        .arg(Arg::new("output")
+            .short('o')
+            .long("output")
+            .action(ArgAction::Set)
+            .value_name("FILENAME")
+            .help("file name for the csv output"))
+        .arg(Arg::new("burnin")
+            .short('b')
+            .long("burnin")
+            .value_name("BURNIN")
+            .help("the fraction of sampled (starting from the top) to be discarded")
+            .action(ArgAction::Set)
+            .value_parser(clap::value_parser!(f64))
+            .default_value("0.1"))
+            .about("hello")
+       .get_matches();
+
+    let mut innames: Vec<Vec<&String>> = cmd
+        .get_occurrences("input")
+        .unwrap()
+        .map(Iterator::collect)
+        .collect();
+
+    let burnin = cmd
+        .get_one("burnin")
+        .unwrap();
+
+    let has_outname = cmd
+        .contains_id("output");
+
+    if has_outname{
+        // write to file
+        let output_filename = cmd
+            .get_one::<String>("output")
+            .unwrap();
+        eprintln!("output file: \t {}", output_filename);
+    }
 
 
-    let filenames = args.clone();
-
+    let filenames = innames.remove(0);
+    eprintln!("input files: \t {:?}", &filenames);
     let mut global_splits: HashSet<BitVec> = HashSet::new();
-    //let burnin = 500;
-    let burnin = 0.1;
-    //let mut h: HashMap<BitVec, u64> = HashMap::new();
 
     // read first tree
     // save the taxon names
     // assume they are equal for all samples
-    //let first_filename = "primates_cytb_JC_run_1.trees";
-    let first_filename = args.get(0).expect("no tree path arguments");
+    let first_filename = filenames.get(0).expect("no tree path arguments");
     let reader = BufReader::new(File::open(first_filename).expect("cannot open file"));
     let second_line = reader.lines()
         .nth(1)
         .expect("input is not two lines long")
         .expect("could not read second line");
-        //.unwrap();
+
     let root = parse_tree(second_line.clone());
     let all_taxa = taxon_labels(&root);
 
     let mut split_frequencies_per_file = vec![];
 
     for filename in filenames{
-//        let filename = "primates_cytb_JC_run_1.trees";
 
         let file = File::open(&filename)?;
         let n_lines = count_lines(&file).unwrap();
 
         let file = File::open(&filename)?;
         let f = BufReader::new(&file);
-        let count: u32 = n_lines as u32;
 
         let bar = ProgressBar::new(n_lines.try_into().unwrap());
 
         let lines = f.lines();
         let mut h: HashMap<BitVec, u64> = HashMap::new();
-        let mut n_trees = 1.0;
+        let mut n_trees = 0.0;
         
         for (i, line) in lines.enumerate(){
-            if (i > 0) & ((i as f64) < burnin * n_lines as f64) {
+            if (i > 0) & ((i as f64) > ((burnin) * n_lines as f64)) {
                 let line_string: String = line.unwrap();
                 let root = parse_tree(line_string);
                 //let all_taxa = taxon_labels(&root);
@@ -101,8 +145,8 @@ fn main() -> io::Result<()> {
                     global_splits.insert(split.clone());
                 }
                 n_trees += 1.0;
-                bar.inc(1);
             }
+            bar.inc(1);
         }
         bar.finish();
          
@@ -118,10 +162,9 @@ fn main() -> io::Result<()> {
             let split_frequency = split_occurrences / n_trees;
             *split_frequencies.entry(key.clone()).or_insert(0.0) = split_frequency;
         }
-        
         split_frequencies_per_file.push(split_frequencies);
-        
     }
+    eprintln!("");
     
     // add in the zero splits 
     for split_frequencies in &mut split_frequencies_per_file{
@@ -133,17 +176,22 @@ fn main() -> io::Result<()> {
         }
     }
 
-    // print summary
-    println!("split frequencies across posterior sample: \t");
-    println!("split \t frequency");
-    for split in &global_splits{
-        print!("{} \t ", &split.to_string().replace(", ", ""));
+    if has_outname{
+        // write to file
 
-        for split_frequencies in &split_frequencies_per_file{
-            print!("{:.6} \t ", split_frequencies[split]);
+    }else{
+        // print summary to stdout
+        println!("split \t frequency");
+        for split in &global_splits{
+            print!("{} \t ", &split.to_string().replace(", ", ""));
+
+            for split_frequencies in &split_frequencies_per_file{
+                print!("{:.6} \t ", split_frequencies[split]);
+            }
+            print!("\n");
         }
-        print!("\n");
     }
+
 /*
     for split_frequencies in split_frequencies_per_file{
         println!("split frequencies across posterior sample: \t");
