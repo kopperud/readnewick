@@ -1,27 +1,16 @@
-use std::{fs, env}; 
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
-use microbench::{self, Options};
 use bitvec::prelude::*;
+use microbench::{self, Options};
 use indicatif::ProgressBar;
-use std::convert::TryFrom;
-use std::rc::Rc;
-use regex::Regex;
-use clap::{Parser, Command, Arg, ArgAction, ArgGroup};
+use clap::{Command, Arg, ArgAction};
 use csv::Writer;
 
-
-
-
 use crate::parser::*;
-use crate::utils::*;
-use crate::tokenizer::*;
 use crate::taxonlabels::*;
 use crate::splits::*;
 use crate::linecount::*;
-use crate::tree::*;
 
 pub mod parser;
 pub mod utils;
@@ -30,18 +19,6 @@ pub mod tree;
 pub mod taxonlabels;
 pub mod splits;
 pub mod linecount;
-
-
-pub fn parse_tree(contents: String) -> Rc<Node> {
-    let newickstring = find_newick_string(contents);
-
-    let stripped_contents = stripcomments(&newickstring); 
-    let tokens = tokenize(&stripped_contents);
-    let root = parse_newick(&tokens);
-
-    return root
-}
-
 
 
 fn main() -> io::Result<()> {
@@ -96,8 +73,6 @@ fn main() -> io::Result<()> {
             .unwrap();
         eprintln!("output file: \t {}", output_filename);
     }
-    eprintln!("has outname: \t {}", has_outname);
-
 
     let filenames = innames.remove(0);
     eprintln!("input files: \t {:?}", &filenames);
@@ -137,7 +112,6 @@ fn main() -> io::Result<()> {
                 let line_string: String = line.unwrap();
                 let root = parse_tree(line_string);
                 //let all_taxa = taxon_labels(&root);
-                //println!("all taxa: \t {:?}", &all_taxa);
 
                 // calculate the splits
                 let mut splits: Vec<BitVec> = Vec::new();
@@ -181,7 +155,6 @@ fn main() -> io::Result<()> {
         }
     }
 
-    //eprintln!("has outname: \t {}", has_outname);
     if has_outname{
         let output_filename = cmd
             .get_one::<String>("output")
@@ -202,9 +175,8 @@ fn main() -> io::Result<()> {
             for split_frequencies in &split_frequencies_per_file{
                 let sf = split_frequencies[split].to_string();
                 line.push(sf);
-                //print!("{:.6} \t ", split_frequencies[split]);
             }
-            wtr.write_record(line);
+            let _ = wtr.write_record(line);
         }
     }else{
         // print summary to stdout
@@ -219,18 +191,7 @@ fn main() -> io::Result<()> {
         }
     }
 
-
-/*
-    for split_frequencies in split_frequencies_per_file{
-        println!("split frequencies across posterior sample: \t");
-        println!("split \t frequency");
-        for (key, value) in &split_frequencies{
-            println!("{} \t {}", &key.to_string().replace(", ", ""), &value);
-        }
-
-    }
-*/
-            //let options = Options::default();
+    //let options = Options::default();
     //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
 
     /*

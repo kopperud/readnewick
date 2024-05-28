@@ -1,6 +1,19 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::tree::*;
+use crate::utils::*;
+use crate::tokenizer::*;
+
+pub fn parse_tree(contents: String) -> Rc<Node> {
+    let newickstring = find_newick_string(contents);
+
+    let stripped_contents = stripcomments(&newickstring); 
+    let tokens = tokenize(&stripped_contents);
+    let root = parse_newick(&tokens);
+
+    return root
+}
+
 
 pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
     let node = Rc::new(Node {
