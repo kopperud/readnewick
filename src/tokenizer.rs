@@ -2,30 +2,28 @@
 pub fn tokenize(s: &str) -> Vec<&str> {
     let mut tokens: Vec<&str> = Vec::new();
 
-    let special_tokens = vec!['(', ')', ',', ';'];
-    let chars: Vec<char> = s.chars().collect();
-
+    const SPECIAL_TOKENS: [char; 4] = ['(', ')', ',', ';'];
     let mut start = 0;
-    let mut end = 0;
 
-    while end < chars.len(){
-        let c = chars[end];
-        if special_tokens.contains(&c){
+    let mut iter = s.char_indices().peekable();
+
+    while let Some((end, c)) = iter.next(){
+        if SPECIAL_TOKENS.contains(&c){
             if start != end {
                 tokens.push(&s[start..end]);
             }
-            if c != 0xA as char{
-                tokens.push(&s[end..end+1]);
+            tokens.push(&s[end..end + c.len_utf8()]);
+            start = end + c.len_utf8();
+        }else if c == 0xA as char{
+            if start != end {
+                tokens.push(&s[start..end]);
             }
-            end += 1;
-            start = end;
-        }else{
-            end += 1;
+            start = end + 1;
         }
     }
 
-    if start != end{
-        tokens.push(&s[start..end]);
+    if start < s.len(){
+        tokens.push(&s[start..s.len()]);
     }
 
     return tokens;
