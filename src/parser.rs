@@ -23,8 +23,6 @@ pub fn parse_newick(tokens: Vec<&str>) -> Rc<Node> {
     });
     
     // strip semicolon
-    let n_minus_one = tokens.len() - 1;
-    //let slice = &tokens[1..n_minus_one];
     let mut slice = tokens.clone();
     slice.remove(slice.len()-1);
     slice.remove(0);
@@ -71,7 +69,6 @@ fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
     //println!("tokens for internaledge: \t {:?}", &tokens);
     let l = parse_brlen(tokens.last().expect("reason"));
 
-    let n_minus_one = tokens.len() - 1;
     //let slice = &tokens[1..n_minus_one];
     let mut slice = tokens.clone();
     slice.remove(slice.len()-1);
@@ -110,14 +107,14 @@ fn find_separators(tokens: Vec<&str>) -> Vec<usize> {
     let mut comma_positions: Vec<usize> = Vec::new();
 
     for i in 0..n_tokens {
-        let token = &tokens[i];
-        if *token == "(" {
+        let token = tokens[i];
+        if token == "(" {
             ps += 1;
-        }else if *token == ")" {
+        }else if token == ")" {
             ps -= 1;
         }
 
-        if (*token == ",") & (ps == 0){
+        if (token == ",") & (ps == 0){
             comma_positions.push(i);
         }
     }
@@ -135,7 +132,6 @@ fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
 
     let comma_positions = find_separators(tokens.clone()); 
     let mut start: usize = 0;
-
     
 
     let mut sides: Vec<Vec<&str>> = Vec::new(); 
@@ -147,9 +143,7 @@ fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
             .unwrap(){
             side.push(*token);
         }
-         //let side = tokens
-          //   .get(start..cp)
-          //   .unwrap(); 
+
         start = cp + 1;
          
         sides.push(side);
@@ -161,10 +155,6 @@ fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
         .unwrap(){
         side.push(*token);
     }
-    /*let side = &tokens
-        .get(start..(n_tokens-1))
-        .unwrap();
-    */
     sides.push(side);
 
     return sides
