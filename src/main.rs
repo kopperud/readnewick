@@ -1,6 +1,8 @@
-use std::{fs, env}; use std::fs::File;
+use std::{fs, env}; 
+use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::collections::{HashMap, HashSet};
+use std::error::Error;
 use microbench::{self, Options};
 use bitvec::prelude::*;
 use indicatif::ProgressBar;
@@ -8,6 +10,8 @@ use std::convert::TryFrom;
 use std::rc::Rc;
 use regex::Regex;
 use clap::{Parser, Command, Arg, ArgAction, ArgGroup};
+use csv::Writer;
+
 
 
 
@@ -92,6 +96,7 @@ fn main() -> io::Result<()> {
             .unwrap();
         eprintln!("output file: \t {}", output_filename);
     }
+    eprintln!("has outname: \t {}", has_outname);
 
 
     let filenames = innames.remove(0);
@@ -113,7 +118,7 @@ fn main() -> io::Result<()> {
 
     let mut split_frequencies_per_file = vec![];
 
-    for filename in filenames{
+    for filename in &filenames{
 
         let file = File::open(&filename)?;
         let n_lines = count_lines(&file).unwrap();
@@ -176,9 +181,31 @@ fn main() -> io::Result<()> {
         }
     }
 
+    //eprintln!("has outname: \t {}", has_outname);
     if has_outname{
-        // write to file
+        let output_filename = cmd
+            .get_one::<String>("output")
+            .unwrap();
+        let mut wtr = Writer::from_path(output_filename)?;
 
+        let mut header = vec!["split"];
+        for filename in filenames{
+            header.push(filename);
+        }
+
+        wtr.write_record(header)?;
+        for split in &global_splits{
+            let mut line: Vec<String> = vec![];
+            let splitstr = split.to_string().replace(", ", "");
+            line.push(splitstr);
+
+            for split_frequencies in &split_frequencies_per_file{
+                let sf = split_frequencies[split].to_string();
+                line.push(sf);
+                //print!("{:.6} \t ", split_frequencies[split]);
+            }
+            wtr.write_record(line);
+        }
     }else{
         // print summary to stdout
         println!("split \t frequency");
@@ -191,6 +218,7 @@ fn main() -> io::Result<()> {
             print!("\n");
         }
     }
+
 
 /*
     for split_frequencies in split_frequencies_per_file{
