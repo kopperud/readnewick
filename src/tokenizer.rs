@@ -5,11 +5,12 @@ pub fn tokenize(s: &str) -> Vec<String> {
     //let tokens: Vec<str> = Vec::new();
     let mut tokens: Vec<String> = Vec::new();
 
-    let mut special_tokens = HashSet::new();
-    special_tokens.insert('(');
-    special_tokens.insert(')');
-    special_tokens.insert(';');
-    special_tokens.insert(',');
+    //let mut special_tokens = HashSet::new();
+    let mut special_tokens = Vec::new();
+    special_tokens.push('(');
+    special_tokens.push(')');
+    special_tokens.push(';');
+    special_tokens.push(',');
 
 
     let chars = s.chars();
