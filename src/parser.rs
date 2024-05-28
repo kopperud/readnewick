@@ -21,6 +21,7 @@ pub fn parse_newick(tokens: &[String]) -> Rc<Node> {
         label: "".to_string(),
         children: RefCell::new(vec![]),
     });
+    
     // strip semicolon
     let n_minus_one = tokens.len() - 1;
     let slice = &tokens[1..n_minus_one];
@@ -123,7 +124,6 @@ fn find_separators(tokens: &[String]) -> Vec<usize> {
 }
 
 fn partition(tokens: &[String]) -> Vec<&[String]> {
-    //let ps = find_comma(&tokens);
     let n_tokens = tokens.len();
 
     let comma_positions = find_separators(&tokens); 
@@ -145,16 +145,6 @@ fn partition(tokens: &[String]) -> Vec<&[String]> {
         .unwrap();
     sides.push(side);
 
-    //for side in &sides{
-    //    println!("side: \t {:?}", side);
-    //}
-
-    //let mut end: usize = *comma_positions.first().unwrap();
-    
-    //let left = &tokens[0..ps];
-    //let right = &tokens[(ps+1)..(n_tokens-1)];
-
-    //return (left, right)
     return sides
 }
 
