@@ -16,3 +16,10 @@ pub struct Node {
     pub label: String,
     pub children: RefCell<Vec<Rc<Node>>>,
 }
+
+#[derive(Debug, Default)]
+pub struct Node2 {
+    pub index: i32, 
+    pub label: RefCell<String>,
+    pub children: RefCell<Vec<Rc<Node2>>>,
+}

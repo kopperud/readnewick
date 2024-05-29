@@ -11,7 +11,9 @@ use crate::parser::*;
 use crate::taxonlabels::*;
 use crate::splits::*;
 use crate::linecount::*;
+use crate::parser2::*;
 
+pub mod parser2;
 pub mod parser;
 pub mod utils;
 pub mod tokenizer;
