@@ -2,7 +2,7 @@
 
 You can build and install the binary using `cargo`
 
-```cargo install https://github.com/kopperud/splitfrequencies```
+```cargo install --git https://github.com/kopperud/splitfrequencies```
 
 ## usage
 
