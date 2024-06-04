@@ -26,5 +26,13 @@ pub fn tokenize(s: &str) -> Vec<&str> {
         tokens.push(&s[start..end]);
     }
 
+    // remove the root branch length, if applicable
+    let n_tokens = tokens.len();
+    let second_last_token = *tokens.get(n_tokens-2)
+        .expect("should have been able to get second-to-last token");
+    if second_last_token.contains(':'){
+        tokens.remove(n_tokens-2);
+    }
+
     tokens
 }
