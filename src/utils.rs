@@ -10,9 +10,9 @@ pub fn stripcomments(contents: &str) -> String {
 }
 
 pub fn find_newick_string(contents: String) -> String {
-    let lparen = contents.find('(').unwrap();
+    let lparen = contents.find('(').expect("expected to find opening parenthesis. are you sure the file has tree?");
 
-    let semicolon = contents.rfind(';').unwrap();
+    let semicolon = contents.rfind(';').expect("expected to find closing semicolon (;), are you sure your file has newick trees?");
 
     let res = contents
         .get(lparen..(semicolon+1))
