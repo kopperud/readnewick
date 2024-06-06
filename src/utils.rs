@@ -4,9 +4,9 @@ use once_cell::sync::Lazy;
 pub fn stripcomments(contents: &str) -> String {
     //let re = Regex::new(r"\[.*?\]").unwrap();
     static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\[.*?\]").unwrap());
-    let stripped_contents = RE.replace_all(&contents, "");
+    let stripped_contents = RE.replace_all(contents, "");
 
-    return stripped_contents.to_string();
+    stripped_contents.to_string()
 }
 
 pub fn find_newick_string(contents: String) -> String {
@@ -19,5 +19,5 @@ pub fn find_newick_string(contents: String) -> String {
         .unwrap()
         .to_string();
 
-    return res
+    res
 }

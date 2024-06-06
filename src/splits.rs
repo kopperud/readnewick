@@ -14,7 +14,7 @@ pub fn root_splits(
     if !children.is_empty(){
         for child in children.iter(){
             //postorder_splits(splits, all_taxa, &child_branch.outbounds.borrow());
-            postorder_splits(splits, all_taxa, &child);
+            postorder_splits(splits, all_taxa, child);
         }
     }
 }
@@ -26,7 +26,7 @@ pub fn postorder_splits(
     let children = node.children.borrow();
 
     if !children.is_empty(){
-        let split_taxa = taxon_labels(&node);
+        let split_taxa = taxon_labels(node);
         let mut split: BitVec = BitVec::new();
 
         for taxon in all_taxa {
@@ -37,7 +37,7 @@ pub fn postorder_splits(
         splits.push(split);
 
         for child in children.iter(){
-            postorder_splits(splits, all_taxa, &child);
+            postorder_splits(splits, all_taxa, child);
         }
     }
 }

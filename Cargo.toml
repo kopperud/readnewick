@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 regex = "1.10.4"
-microbench = "0.5.0"
 bitvec = "1.0.1"
 indicatif = "0.17.8"
 bytecount = "0.6.8"

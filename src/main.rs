@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::collections::{HashMap, HashSet};
 use bitvec::prelude::*;
-use microbench::{self, Options};
 use indicatif::ProgressBar;
 use clap::{Command, Arg, ArgAction};
 use csv::Writer;
@@ -84,7 +83,7 @@ fn main() -> io::Result<()> {
     // read first tree
     // save the taxon names
     // assume they are equal for all samples
-    let first_filename = filenames.get(0).expect("no tree path arguments");
+    let first_filename = filenames.first().expect("no tree path arguments");
     let reader = BufReader::new(File::open(first_filename).expect("cannot open file"));
     let second_line = reader.lines()
         .nth(1)
@@ -98,10 +97,10 @@ fn main() -> io::Result<()> {
 
     for filename in &filenames{
 
-        let file = File::open(&filename)?;
+        let file = File::open(filename)?;
         let n_lines = count_lines(&file).unwrap();
 
-        let file = File::open(&filename)?;
+        let file = File::open(filename)?;
         let f = BufReader::new(&file);
 
         let bar = ProgressBar::new(n_lines.try_into().unwrap());
@@ -146,7 +145,7 @@ fn main() -> io::Result<()> {
         }
         split_frequencies_per_file.push(split_frequencies);
     }
-    eprintln!("");
+    eprintln!();
     
     // add in the zero splits 
     for split_frequencies in &mut split_frequencies_per_file{
@@ -190,7 +189,7 @@ fn main() -> io::Result<()> {
             for split_frequencies in &split_frequencies_per_file{
                 print!("{:.6} \t ", split_frequencies[split]);
             }
-            print!("\n");
+            println!();
         }
     }
 
@@ -214,6 +213,7 @@ fn main() -> io::Result<()> {
     
     microbench::bench(&options, "create a regex", || Regex::new(r"\[.*?\]").unwrap());
     */
+
 
     Ok(())
 }

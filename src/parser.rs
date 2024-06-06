@@ -9,9 +9,9 @@ pub fn parse_tree(contents: String) -> Rc<Node> {
 
     let stripped_contents = stripcomments(&newickstring); 
     let tokens = tokenize(&stripped_contents);
-    let root = parse_newick(tokens);
-
-    return root
+    //let root = parse_newick(tokens);
+    //root
+    parse_newick(tokens)
 }
 
 
@@ -39,7 +39,7 @@ pub fn parse_newick(tokens: Vec<&str>) -> Rc<Node> {
         }
     }
 
-    return node
+    node
 }
 
 fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
@@ -107,15 +107,16 @@ fn find_separators(tokens: Vec<&str>) -> Vec<usize> {
     let n_tokens = tokens.len();
     let mut comma_positions: Vec<usize> = Vec::new();
 
-    for i in 0..n_tokens {
-        let token = tokens[i];
-        if token == "(" {
+    //for i in 0..n_tokens {
+    //let token = tokens[i];
+    for (i, token) in tokens.iter().enumerate().take(n_tokens){
+        if *token == "(" {
             ps += 1;
-        }else if token == ")" {
+        }else if *token == ")" {
             ps -= 1;
         }
 
-        if (token == ",") & (ps == 0){
+        if (*token == ",") & (ps == 0){
             comma_positions.push(i);
         }
     }
@@ -125,7 +126,7 @@ fn find_separators(tokens: Vec<&str>) -> Vec<usize> {
         panic!("crash and burn");
     }
 
-    return comma_positions
+    comma_positions
 }
 
 fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
@@ -158,20 +159,25 @@ fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
     }
     sides.push(side);
 
-    return sides
+    sides
 }
 
+/*
 fn parse_brlen(token: &str) -> f64 {
     let colon_pos = token.find(':').unwrap();
 
     let trailing = &token[(colon_pos+1)..];
     let branch_length: f64 = trailing.parse().unwrap();
-    return branch_length
+    branch_length
 }
+*/
 
 fn parse_speciesname(token: &str) -> &str {
-    let colon_pos = token.find(':').unwrap();
+    let colon_pos = token.find(':').expect("expected to find a token starting with a colon (\":\")");
 
-    let species_name = &token[..colon_pos];
-    return species_name
+    //let species_name = &token[..colon_pos];
+    //species_name
+    &token[..colon_pos]
 }
+
+

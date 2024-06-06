@@ -13,7 +13,7 @@ pub fn count_lines<R: io::Read>(handle: R) -> Result<usize, io::Error> {
             if buf.is_empty(){
                 break;
             }
-            count += bytecount::count(&buf, b'\n');
+            count += bytecount::count(buf, b'\n');
             buf.len()
         };
         reader.consume(len);
