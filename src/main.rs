@@ -103,7 +103,9 @@ fn main() -> io::Result<()> {
         let file = File::open(filename)?;
         let f = BufReader::new(&file);
 
-        let bar = ProgressBar::new(n_lines.try_into().unwrap());
+        //let bar = ProgressBar::new(n_lines.try_into().unwrap());
+        let n_trees = (n_lines - 1).try_into().expect("expected to be able to convert usize to u64");
+        let bar = ProgressBar::new(n_trees);
 
         let lines = f.lines();
         let mut h: HashMap<BitVec, u64> = HashMap::new();
