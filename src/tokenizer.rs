@@ -1,5 +1,8 @@
-pub fn tokenize(s: &str) -> Vec<&str> {
-    let mut tokens: Vec<&str> = Vec::new();
+use std::collections::VecDeque;
+
+pub fn tokenize(s: &str) -> VecDeque<&str> {
+    //let mut tokens: Vec<&str> = Vec::new();
+    let mut tokens: VecDeque<&str> = VecDeque::new();
     const SPECIAL_TOKENS: &[char] = &['(', ')', ',', ';'];
     let chars: Vec<char> = s.chars().collect();
 
@@ -10,10 +13,10 @@ pub fn tokenize(s: &str) -> Vec<&str> {
         let c = chars[end];
         if SPECIAL_TOKENS.contains(&c){
             if start != end {
-                tokens.push(&s[start..end]);
+                tokens.push_back(&s[start..end]);
             }
             if c != 0xA as char{
-                tokens.push(&s[end..end+1]);
+                tokens.push_back(&s[end..end+1]);
             }
             end += 1;
             start = end;
@@ -23,7 +26,7 @@ pub fn tokenize(s: &str) -> Vec<&str> {
     }
 
     if start != end{
-        tokens.push(&s[start..end]);
+        tokens.push_back(&s[start..end]);
     }
 
     // remove the root branch length, if applicable

@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use crate::tree::*;
 use crate::utils::*;
 use crate::tokenizer::*;
@@ -15,7 +16,7 @@ pub fn parse_tree(contents: String) -> Rc<Node> {
 }
 
 
-pub fn parse_newick(tokens: Vec<&str>) -> Rc<Node> {
+pub fn parse_newick(tokens: VecDeque<&str>) -> Rc<Node> {
     let node = Rc::new(Node {
         index: 1,
         label: "".to_string(),
@@ -24,8 +25,10 @@ pub fn parse_newick(tokens: Vec<&str>) -> Rc<Node> {
     
     // strip semicolon
     let mut slice = tokens.clone();
-    slice.remove(slice.len()-1);
-    slice.remove(0);
+    //slice.remove(slice.len()-1);
+    //slice.remove(0);
+    slice.pop_front();
+    slice.pop_back();
 
     let sides = partition(slice);
 
@@ -42,11 +45,11 @@ pub fn parse_newick(tokens: Vec<&str>) -> Rc<Node> {
     node
 }
 
-fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
+fn terminaledge(tokens: VecDeque<&str>, parent_node: &Rc<Node>){
     //println!("tokens for terminal: \t {:?}", tokens);
     assert!(tokens.len() == 1);
 
-    let end_token = tokens.last().expect("reason");
+    let end_token = *tokens.back().expect("reason");
     //let l = parse_brlen(end_token);
     let species_name = parse_speciesname(end_token);
 
@@ -64,7 +67,7 @@ fn terminaledge(tokens: Vec<&str>, parent_node: &Rc<Node>){
     
 }
 
-fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
+fn internaledge(tokens: VecDeque<&str>, parent_node: &Rc<Node>) {
     // strip parentheses
     //println!("tokens for internaledge: \t {:?}", &tokens);
     //let l = parse_brlen(tokens.last().expect("reason"));
@@ -74,18 +77,15 @@ fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
     slice.remove(slice.len()-1);
     slice.remove(0);
 
+    let internal_label: String = "".to_string();
+
     // add a new internal node and branch
     let node = Rc::new(Node {
         index: 1,
-        label: "".to_string(),
+        label: internal_label,
         children: RefCell::new(vec![]),
     });
-    /*let branch1 = Rc::new(Branch {
-        index: 1,
-        time: l,
-        outbounds: RefCell::new(Rc::clone(&node)),
-    });
-    */
+
     parent_node.children.borrow_mut().push(Rc::clone(&node));
 
     let sides = partition(slice);
@@ -101,7 +101,7 @@ fn internaledge(tokens: Vec<&str>, parent_node: &Rc<Node>) {
     }
 }
 
-fn find_separators(tokens: Vec<&str>) -> Vec<usize> {
+fn find_separators(tokens: VecDeque<&str>) -> Vec<usize> {
     let mut ps = 0;
 
     let n_tokens = tokens.len();
@@ -129,21 +129,20 @@ fn find_separators(tokens: Vec<&str>) -> Vec<usize> {
     comma_positions
 }
 
-fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
+fn partition(tokens: VecDeque<&str>) -> Vec<VecDeque<&str>> {
     let n_tokens = tokens.len();
 
     let comma_positions = find_separators(tokens.clone()); 
     let mut start: usize = 0;
     
 
-    let mut sides: Vec<Vec<&str>> = Vec::new(); 
+    let mut sides: Vec<VecDeque<&str>> = Vec::new(); 
+    
 
     for cp in comma_positions{
-        let mut side: Vec<&str> = Vec::new();
-        for token in tokens
-            .get(start..cp)
-            .unwrap(){
-            side.push(*token);
+        let mut side: VecDeque<&str> = VecDeque::new();
+        for token in tokens.range(start..cp){
+            side.push_back(*token);
         }
 
         start = cp + 1;
@@ -151,11 +150,9 @@ fn partition(tokens: Vec<&str>) -> Vec<Vec<&str>> {
         sides.push(side);
     }
 
-    let mut side: Vec<&str> = Vec::new();
-    for token in tokens
-        .get(start..(n_tokens-1))
-        .unwrap(){
-        side.push(*token);
+    let mut side: VecDeque<&str> = VecDeque::new();
+    for token in tokens.range(start..(n_tokens-1)){
+        side.push_back(*token);
     }
     sides.push(side);
 
