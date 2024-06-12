@@ -5,6 +5,8 @@ use bitvec::prelude::*;
 use indicatif::ProgressBar;
 use clap::{Command, Arg, ArgAction};
 use csv::Writer;
+use fasthash::city::Hash32;
+use fasthash::farm::Hash64;
 
 use crate::parser::*;
 use crate::taxonlabels::*;
@@ -92,6 +94,15 @@ fn main() -> io::Result<()> {
 
     let root = parse_tree(second_line.clone());
     let all_taxa = taxon_labels(&root);
+    let n_taxa = all_taxa.len();
+    
+    //let mut taxa_map = std::collections::BTreeMap::new();
+    let mut taxa_map = HashMap::with_hasher(Hash32);
+
+    for (i, taxon) in all_taxa.iter().enumerate(){
+        taxa_map.insert(taxon.to_owned(), i);
+    }
+        
 
     let mut split_frequencies_per_file = vec![];
 
@@ -108,7 +119,8 @@ fn main() -> io::Result<()> {
         let bar = ProgressBar::new(n_trees);
 
         let lines = f.lines();
-        let mut h: HashMap<BitVec, u64> = HashMap::new();
+        //let mut h: HashMap<BitVec, u64> = HashMap::new();
+        let mut h: HashMap<BitVec, u64, Hash64> = HashMap::with_hasher(Hash64);
         let mut n_trees = 0.0;
         
         for (i, line) in lines.enumerate(){
@@ -119,7 +131,7 @@ fn main() -> io::Result<()> {
 
                 // calculate the splits
                 let mut splits: Vec<BitVec> = Vec::new();
-                root_splits(&mut splits, &all_taxa, &root);
+                root_splits(&mut splits, &taxa_map, &n_taxa, &root);
 
                 // add the splits to the dictionary
                 for split in &splits{
