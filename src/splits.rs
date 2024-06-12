@@ -31,11 +31,23 @@ pub fn postorder_splits(
     taxa_map: &HashMap<String, usize, Hash32>,
     n_taxa: &usize,
     node: &Rc<Node>
-    ){
+    ) -> Vec<String>
+{
     let children = node.children.borrow();
 
-    if !children.is_empty(){
-        let split_taxa = taxon_labels(node);
+    let mut split_taxa: Vec<String> = Vec::new();
+
+    if children.is_empty(){
+        split_taxa.push(node.label.clone());
+    }else{
+ 
+        for child in children.iter(){
+            let mut subtree_taxa = postorder_splits(splits, taxa_map, n_taxa, child);
+            split_taxa.append(&mut subtree_taxa);
+        }   
+
+        //if !children.is_empty(){
+        //    let split_taxa = taxon_labels(node);
         let mut split: BitVec = BitVec::repeat(false, *n_taxa);
 
         /*for taxon in all_taxa {
@@ -49,8 +61,6 @@ pub fn postorder_splits(
 
         splits.push(split);
 
-        for child in children.iter(){
-            postorder_splits(splits, taxa_map, n_taxa, child);
-        }
     }
+    split_taxa
 }
