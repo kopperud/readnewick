@@ -134,7 +134,6 @@ fn partition(tokens: VecDeque<&str>) -> Vec<VecDeque<&str>> {
 
     let comma_positions = find_separators(tokens.clone()); 
     let mut start: usize = 0;
-    
 
     let mut sides: Vec<VecDeque<&str>> = Vec::new(); 
     
