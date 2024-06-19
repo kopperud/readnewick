@@ -80,7 +80,7 @@ fn main() -> io::Result<()> {
 
     let filenames = innames.remove(0);
     eprintln!("input files: \t {:?}", &filenames);
-    let mut global_splits: HashSet<BitVec> = HashSet::new();
+    let mut global_splits: HashSet<BitVec, Hash64> = HashSet::with_hasher(Hash64);
 
     // read first tree
     // save the taxon names
@@ -96,7 +96,6 @@ fn main() -> io::Result<()> {
     let all_taxa = taxon_labels(&root);
     let n_taxa = all_taxa.len();
     
-    //let mut taxa_map = std::collections::BTreeMap::new();
     let mut taxa_map = HashMap::with_hasher(Hash32);
 
     for (i, taxon) in all_taxa.iter().enumerate(){
@@ -106,7 +105,7 @@ fn main() -> io::Result<()> {
 
     let mut split_frequencies_per_file = vec![];
 
-    for filename in &filenames{
+    for filename in filenames.iter(){
 
         let file = File::open(filename)?;
         let n_lines = count_lines(&file).unwrap();
@@ -127,7 +126,6 @@ fn main() -> io::Result<()> {
             if (i > 0) & ((i as f64) > ((burnin) * n_lines as f64)) {
                 let line_string: String = line.unwrap();
                 let root = parse_tree(line_string);
-                //let all_taxa = taxon_labels(&root);
 
                 // calculate the splits
                 let mut splits: Vec<BitVec> = Vec::new();
@@ -151,7 +149,7 @@ fn main() -> io::Result<()> {
         //}
 
         // calculate split frequencies
-        let mut split_frequencies: HashMap<BitVec, f64> = HashMap::new();
+        let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_hasher(Hash64);
         for (key, value) in h{
             let split_occurrences = value as f64;
             let split_frequency = split_occurrences / n_trees;
@@ -206,6 +204,7 @@ fn main() -> io::Result<()> {
             println!();
         }
     }
+
 
     //let options = Options::default();
     //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
