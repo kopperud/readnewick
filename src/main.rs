@@ -118,7 +118,6 @@ fn main() -> io::Result<()> {
         let bar = ProgressBar::new(n_trees);
 
         let lines = f.lines();
-        //let mut h: HashMap<BitVec, u64> = HashMap::new();
         let mut h: HashMap<BitVec, u64, Hash64> = HashMap::with_hasher(Hash64);
         let mut n_trees = 0.0;
         
@@ -143,11 +142,6 @@ fn main() -> io::Result<()> {
         }
         bar.finish();
          
-        //println!("summary hash map: \t");
-        //for (key, value) in &h{
-        //    println!("key: {:?}, \t val: {}", &key, &value);
-        //}
-
         // calculate split frequencies
         let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_hasher(Hash64);
         for (key, value) in h{
@@ -204,29 +198,6 @@ fn main() -> io::Result<()> {
             println!();
         }
     }
-
-
-    //let options = Options::default();
-    //microbench::bench(&options, "collect leaf labels", || taxon_labels(&root));
-
-    /*
-    let newickstring = find_newick_string(second_line.clone());
-
-    let stripped_contents = stripcomments(&newickstring); 
-    let tokens = tokenize(&stripped_contents);
-    let root = parse_newick(&tokens);
-
-    let options = Options::default();
-    microbench::bench(&options, "find newick string", || find_newick_string(second_line.clone()));
-    microbench::bench(&options, "strip comments", || stripcomments(&newickstring));
-    microbench::bench(&options, "tokenize", || tokenize(&stripped_contents));
-    microbench::bench(&options, "parse tokens", || parse_newick(&tokens));
-    microbench::bench(&options, "all steps combined", || parse_tree(second_line.clone()));
-
-    
-    microbench::bench(&options, "create a regex", || Regex::new(r"\[.*?\]").unwrap());
-    */
-
 
     Ok(())
 }
