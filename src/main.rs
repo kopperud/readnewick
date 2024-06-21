@@ -113,7 +113,10 @@ fn main() -> io::Result<()> {
         let file = File::open(filename)?;
         let f = BufReader::new(&file);
 
-        let n_trees = (n_lines - 1).try_into().expect("expected to be able to convert usize to u64");
+        let n_trees = (n_lines - 1)
+            .try_into()
+            .expect("expected to be able to convert usize to u64");
+
         let bar = ProgressBar::new(n_trees);
 
         let lines = f.lines();
@@ -180,7 +183,8 @@ fn main() -> io::Result<()> {
             line.push(splitstr);
 
             for split_frequencies in split_frequencies_per_file.iter(){
-                let sf = split_frequencies[split].to_string();
+                //let sf = split_frequencies[split].to_string();
+                let sf = format!("{}", split_frequencies[split]);
                 line.push(sf);
             }
             wtr.write_record(line)?;
