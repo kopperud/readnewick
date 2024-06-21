@@ -7,6 +7,7 @@ use clap::{Command, Arg, ArgAction};
 use csv::Writer;
 use fasthash::city::Hash32;
 use fasthash::farm::Hash64;
+use rayon::prelude::*;
 
 use crate::parser::*;
 use crate::taxonlabels::*;
@@ -110,44 +111,81 @@ fn main() -> io::Result<()> {
         let file = File::open(filename)?;
         let n_lines = count_lines(&file).unwrap();
 
-        let file = File::open(filename)?;
-        let f = BufReader::new(&file);
-
-        let n_trees = (n_lines - 1)
+        let n_trees: u64 = (n_lines - 1)
             .try_into()
             .expect("expected to be able to convert usize to u64");
 
-        let bar = ProgressBar::new(n_trees);
 
-        let lines = f.lines();
+        let n_skip = (burnin * n_lines as f64).round() as usize;
+        println!("n_skip: {}", n_skip);
+
         let mut h: HashMap<BitVec, u64, Hash64> = HashMap::with_hasher(Hash64);
-        let mut n_trees = 0.0;
-        
-        for (i, line) in lines.enumerate(){
-            if (i > 0) & ((i as f64) > ((burnin) * n_lines as f64)) {
-                let line_string: String = line.unwrap();
-                let root = parse_tree(line_string);
 
-                // calculate the splits
-                let mut splits: Vec<BitVec> = Vec::new();
-                root_splits(&mut splits, &taxa_map, &n_taxa, &root);
 
+
+            let file = File::open(filename)?;
+            let f = BufReader::new(&file);
+
+            let lines = f
+                .lines()
+                .skip(n_skip);
+
+           
+            let this_file_splits: Vec<Vec<BitVec>> = lines
+               .par_bridge()
+               .map(|line| -> Vec<BitVec> {
+                    let line_string: String = line.unwrap();
+                    let root = parse_tree(line_string);
+
+                    // calculate the splits
+                    let mut splits: Vec<BitVec> = Vec::new();
+                    root_splits(&mut splits, &taxa_map, &n_taxa, &root);
+
+                    splits
+                })
+               .collect();
+
+        /*
+        let mut this_file_splits: Vec<Vec<BitVec>> = Vec::new();
+        let file = File::open(filename)?;
+        let f = BufReader::new(&file);
+        let lines = f
+            .lines()
+            .skip(n_skip);
+
+
+        let bar = ProgressBar::new(n_trees);
+        bar.inc(n_skip as u64);
+
+        for line in lines{
+            let line_string: String = line.unwrap();
+            let root = parse_tree(line_string);
+
+            // calculate the splits
+            let mut splits: Vec<BitVec> = Vec::new();
+            root_splits(&mut splits, &taxa_map, &n_taxa, &root);
+
+            this_file_splits.push(splits);
+        }
+        bar.finish();
+        */
+
+        let mut n_processed = 0.0;
+        for splits in this_file_splits.into_iter(){
                 // add the splits to the dictionary
                 for split in splits.into_iter(){
                     *h.entry(split.clone()).or_insert(0) += 1;
                     global_splits.insert(split);
                 }
-                n_trees += 1.0;
-            }
-            bar.inc(1);
-        }
-        bar.finish();
+                n_processed += 1.0;
+            //bar.inc(1);
+        } 
          
         // calculate split frequencies
         let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_hasher(Hash64);
         for (key, value) in h{
             let split_occurrences = value as f64;
-            let split_frequency = split_occurrences / n_trees;
+            let split_frequency = split_occurrences / n_processed;
             *split_frequencies.entry(key.clone()).or_insert(0.0) = split_frequency;
         }
         split_frequencies_per_file.push(split_frequencies);
