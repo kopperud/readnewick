@@ -113,7 +113,6 @@ fn main() -> io::Result<()> {
         let file = File::open(filename)?;
         let f = BufReader::new(&file);
 
-        //let bar = ProgressBar::new(n_lines.try_into().unwrap());
         let n_trees = (n_lines - 1).try_into().expect("expected to be able to convert usize to u64");
         let bar = ProgressBar::new(n_trees);
 
@@ -131,10 +130,9 @@ fn main() -> io::Result<()> {
                 root_splits(&mut splits, &taxa_map, &n_taxa, &root);
 
                 // add the splits to the dictionary
-                for split in &splits{
+                for split in splits.into_iter(){
                     *h.entry(split.clone()).or_insert(0) += 1;
-                    
-                    global_splits.insert(split.clone());
+                    global_splits.insert(split);
                 }
                 n_trees += 1.0;
             }
@@ -154,9 +152,9 @@ fn main() -> io::Result<()> {
     eprintln!();
     
     // add in the zero splits 
-    for split_frequencies in &mut split_frequencies_per_file{
+    //for split_frequencies in &mut split_frequencies_per_file{
+    for split_frequencies in split_frequencies_per_file.iter_mut(){
         for split in &global_splits{
-
             if !split_frequencies.contains_key(split){
                 *split_frequencies.entry(split.clone()).or_insert(0.0) = 0.0;
             }
@@ -175,22 +173,27 @@ fn main() -> io::Result<()> {
         }
 
         wtr.write_record(header)?;
-        for split in &global_splits{
+        for split in global_splits.iter(){
             let mut line: Vec<String> = vec![];
-            let splitstr = split.to_string().replace(", ", "");
+            let splitstr = format!("{:b}", split)
+                .replace(", ", "");
             line.push(splitstr);
 
-            for split_frequencies in &split_frequencies_per_file{
+            for split_frequencies in split_frequencies_per_file.iter(){
                 let sf = split_frequencies[split].to_string();
                 line.push(sf);
             }
-            let _ = wtr.write_record(line);
+            wtr.write_record(line)?;
         }
+
     }else{
         // print summary to stdout
         println!("split \t frequency");
-        for split in &global_splits{
-            print!("{} \t ", &split.to_string().replace(", ", ""));
+        for split in global_splits.iter(){
+            let splitstr = format!("{:b}", split)
+                .replace(", ", "");
+
+            print!("{} \t ", splitstr);
 
             for split_frequencies in &split_frequencies_per_file{
                 print!("{:.6} \t ", split_frequencies[split]);

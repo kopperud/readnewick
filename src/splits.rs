@@ -42,7 +42,9 @@ pub fn postorder_splits(
         let mut split: BitVec = BitVec::repeat(false, *n_taxa);
 
         for taxon in split_taxa.iter(){
-            let idx = taxa_map.get(taxon).expect("expected to find the taxon name in the hashmap. do your trees have different taxon labels?");
+            let idx = taxa_map
+                .get(taxon)
+                .expect("expected to find the taxon name in the hashmap. do your trees have different taxon labels?");
             split.set(*idx, true);
         }
 
