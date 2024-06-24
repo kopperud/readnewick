@@ -134,10 +134,11 @@ fn main() -> io::Result<()> {
                 .lines()
                 .skip(n_skip);
            
-            let this_file_splits: Vec<Vec<BitVec>> = lines
+            //let this_file_splits: Vec<Vec<BitVec>> = lines
+            let _ = lines
                .par_bridge()
                .progress_count(n_keep)
-               .map(|line| -> Vec<BitVec> {
+               .map(|line|  {
                     let line_string: String = line.unwrap();
                     let root = parse_tree(line_string);
 
@@ -145,9 +146,22 @@ fn main() -> io::Result<()> {
                     let mut splits: Vec<BitVec> = Vec::new();
                     root_splits(&mut splits, &taxa_map, &n_taxa, &root);
 
-                    splits
+                    // lock hashmap for this file
+                    let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
+                    let mut h = hm.lock().unwrap();
+                    for split in splits.iter(){
+                        *h.entry(split.clone()).or_insert(0) += 1;
+                    }
+
+                    // lock hashset for all (global) splits
+                    let gs = Arc::clone(&global_splits);
+                    let mut g = gs.lock().unwrap();
+                    for split in splits.iter(){
+                        g.insert(split.clone());
+                    }
+
                 })
-               .collect();
+            .count();
 
         /*
         let mut this_file_splits: Vec<Vec<BitVec>> = Vec::new();
@@ -174,26 +188,21 @@ fn main() -> io::Result<()> {
         bar.finish();
         */
 
-        eprintln!("inserting splits in hash table for file {}", file_index);
         let mut n_processed = 0.0;
+        /*
+        eprintln!("inserting splits in hash table for file {}", file_index);
         for splits in this_file_splits.into_iter(){
                 // add the splits to the dictionary
                 for split in splits.into_iter(){
-                    //let key = split;
-                    let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
-                    let mut h = hm.lock().unwrap();
-                    *h.entry(split.clone()).or_insert(0) += 1;
 
-                    //*this_file_splits.entry(split.clone()).or_insert(0) += 1;
-                    //
-                    //*h.entry(key).or_insert(0) += 1;
-                    //global_splits.insert(key);
                     let gs = Arc::clone(&global_splits);
                     gs.lock().unwrap().insert(split);
                 }
                 n_processed += 1.0;
             //bar.inc(1);
         } 
+        */
+        
          
         // calculate split frequencies
         println!("calculating split frequencies for file {}", file_index);
@@ -207,7 +216,6 @@ fn main() -> io::Result<()> {
         }
         split_frequencies_per_file.push(split_frequencies);
     }
-    eprintln!();
     
     // add in the zero splits 
     //for split_frequencies in &mut split_frequencies_per_file{
