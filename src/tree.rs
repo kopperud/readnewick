@@ -1,6 +1,3 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 /*
 #[derive(Debug, Default)]
 pub struct Branch {
@@ -14,5 +11,5 @@ pub struct Branch {
 pub struct Node {
     pub index: i32, 
     pub label: String,
-    pub children: RefCell<Vec<Rc<Node>>>,
+    pub children: Vec<Box<Node>>,
 }

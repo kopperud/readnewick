@@ -1,11 +1,9 @@
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::collections::VecDeque;
 use crate::tree::*;
 use crate::utils::*;
 use crate::tokenizer::*;
 
-pub fn parse_tree(contents: String) -> Rc<Node> {
+pub fn parse_tree(contents: String) -> Box<Node> {
     let newickstring = find_newick_string(contents);
 
     let stripped_contents = stripcomments(&newickstring); 
@@ -16,11 +14,11 @@ pub fn parse_tree(contents: String) -> Rc<Node> {
 }
 
 
-pub fn parse_newick(tokens: VecDeque<&str>) -> Rc<Node> {
-    let node = Rc::new(Node {
+pub fn parse_newick(tokens: VecDeque<&str>) -> Box<Node> {
+    let mut node = Box::new(Node {
         index: 1,
         label: "".to_string(),
-        children: RefCell::new(vec![]),
+        children: Vec::new(),
     });
     
     // strip semicolon
@@ -35,9 +33,9 @@ pub fn parse_newick(tokens: VecDeque<&str>) -> Rc<Node> {
     for side in sides{
         if !side.is_empty(){
             if side.len() == 1{
-                terminaledge(side, &node);
+                terminaledge(side, &mut node);
             }else{
-                internaledge(side, &node); 
+                internaledge(side, &mut node); 
             }
         }
     }
@@ -45,7 +43,7 @@ pub fn parse_newick(tokens: VecDeque<&str>) -> Rc<Node> {
     node
 }
 
-fn terminaledge(tokens: VecDeque<&str>, parent_node: &Rc<Node>){
+fn terminaledge(tokens: VecDeque<&str>, parent_node: &mut Box<Node>){
     //println!("tokens for terminal: \t {:?}", tokens);
     assert!(tokens.len() == 1);
 
@@ -53,21 +51,16 @@ fn terminaledge(tokens: VecDeque<&str>, parent_node: &Rc<Node>){
     //let l = parse_brlen(end_token);
     let species_name = parse_speciesname(end_token);
 
-    let node = Rc::new(Node {
+    let node = Box::new(Node {
         index: 1,
         label: species_name.to_string(),
-        children: RefCell::new(vec![]),
+        children: Vec::new(),
     });
-    /* let branch1 = Rc::new(Branch {
-        index: 1,
-        time: l,
-        outbounds: RefCell::new(Rc::clone(&node)),
-    });*/
-    parent_node.children.borrow_mut().push(Rc::clone(&node));
-    
+
+    parent_node.children.push(node);
 }
 
-fn internaledge(tokens: VecDeque<&str>, parent_node: &Rc<Node>) {
+fn internaledge(tokens: VecDeque<&str>, parent_node: &mut Box<Node>) {
     // strip parentheses
     //println!("tokens for internaledge: \t {:?}", &tokens);
     //let l = parse_brlen(tokens.last().expect("reason"));
@@ -80,25 +73,26 @@ fn internaledge(tokens: VecDeque<&str>, parent_node: &Rc<Node>) {
     let internal_label: String = "".to_string();
 
     // add a new internal node and branch
-    let node = Rc::new(Node {
+    let mut node = Box::new(Node {
         index: 1,
         label: internal_label,
-        children: RefCell::new(vec![]),
+        children: Vec::new(),
     });
 
-    parent_node.children.borrow_mut().push(Rc::clone(&node));
 
     let sides = partition(slice);
 
     for side in sides{
         if !side.is_empty(){
             if side.len() == 1{
-                terminaledge(side, &node);
+                terminaledge(side, &mut node);
             }else{
-                internaledge(side, &node); 
+                internaledge(side, &mut node); 
             }
         }
     }
+
+    parent_node.children.push(node);
 }
 
 fn find_separators(tokens: VecDeque<&str>) -> Vec<usize> {

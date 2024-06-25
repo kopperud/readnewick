@@ -1,8 +1,7 @@
 use crate::tree::*;
-use std::rc::Rc;
 
 pub fn taxon_labels(
-    node: &Rc<Node>
+    node: &Box<Node>
     ) -> Vec<String> 
 {
     let mut taxa: Vec<String> = vec![];
@@ -13,10 +12,10 @@ pub fn taxon_labels(
 
 fn taxon_labels_po(
     taxa: &mut Vec<String>, 
-    node: &Rc<Node>
+    node: &Box<Node>
     )
 {
-    let children = node.children.borrow();
+    let children = &node.children;
 
     if children.is_empty(){
         taxa.push(node.label.clone());

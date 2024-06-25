@@ -1,4 +1,3 @@
-use std::rc::Rc;
 use bitvec::prelude::*;
 use std::collections::HashMap;
 use fasthash::city::Hash32;
@@ -9,9 +8,9 @@ pub fn root_splits(
     splits: &mut Vec<BitVec>, 
     taxa_map: &HashMap<String, usize, Hash32>,
     n_taxa: &usize,
-    node: &Rc<Node>
+    node: &Box<Node>
     ){
-    let children = node.children.borrow();
+    let children = &node.children;
    
     if !children.is_empty(){
         for child in children.iter(){
@@ -23,10 +22,10 @@ pub fn postorder_splits(
     splits: &mut Vec<BitVec>, 
     taxa_map: &HashMap<String, usize, Hash32>,
     n_taxa: &usize,
-    node: &Rc<Node>
+    node: &Box<Node>
     ) -> Vec<String>
 {
-    let children = node.children.borrow();
+    let children = &node.children;
 
     let mut split_taxa: Vec<String> = Vec::new();
 
