@@ -9,7 +9,6 @@ pub struct Branch {
 
 #[derive(Debug, Default)]
 pub struct Node {
-    pub index: i32, 
     pub label: String,
     pub children: Vec<Box<Node>>,
 }

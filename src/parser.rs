@@ -16,7 +16,6 @@ pub fn parse_tree(contents: String) -> Box<Node> {
 
 pub fn parse_newick(tokens: VecDeque<&str>) -> Box<Node> {
     let mut node = Box::new(Node {
-        index: 1,
         label: "".to_string(),
         children: Vec::new(),
     });
@@ -52,7 +51,6 @@ fn terminaledge(tokens: VecDeque<&str>, parent_node: &mut Box<Node>){
     let species_name = parse_speciesname(end_token);
 
     let node = Box::new(Node {
-        index: 1,
         label: species_name.to_string(),
         children: Vec::new(),
     });
@@ -74,7 +72,6 @@ fn internaledge(tokens: VecDeque<&str>, parent_node: &mut Box<Node>) {
 
     // add a new internal node and branch
     let mut node = Box::new(Node {
-        index: 1,
         label: internal_label,
         children: Vec::new(),
     });
