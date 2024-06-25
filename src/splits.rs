@@ -44,7 +44,7 @@ pub fn postorder_splits(
             let idx = taxa_map
                 .get(taxon)
                 .expect("expected to find the taxon name in the hashmap. do your trees have different taxon labels?");
-            split.set(*idx, true);
+            split.set(idx.clone(), true);
         }
 
         splits.push(split);

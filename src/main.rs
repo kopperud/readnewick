@@ -2,14 +2,19 @@ use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
 use std::sync::{Mutex,Arc};
 use std::collections::{HashMap, HashSet};
+use std::sync::mpsc::channel;
+
 use bitvec::prelude::*;
 use indicatif::{ParallelProgressIterator, ProgressBar};
+
 use rayon::iter::ParallelIterator;
+use rayon::ThreadPoolBuilder;
+use rayon::prelude::*;
+
 use clap::{Command, Arg, ArgAction};
 use csv::Writer;
 use fasthash::city::Hash32;
 use fasthash::farm::Hash64;
-use rayon::prelude::*;
 
 use crate::parser::*;
 use crate::taxonlabels::*;
@@ -117,44 +122,70 @@ fn main() -> io::Result<()> {
 
         let this_file_map: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::new(Mutex::new(HashMap::with_capacity_and_hasher(500000, Hash64)));
 
-            let file = File::open(filename)?;
-            let f = BufReader::new(&file);
+        let file = File::open(filename)?;
+        let f = BufReader::new(&file);
 
-            let lines = f
-                .lines()
-                .skip(1) // skip first because it is the header,
-                                                            // no trees in the header
-                .skip(n_skip);
-           
-            let n= lines
-               .par_bridge()
-               .progress_count(n_keep)
-               .map(|line|  {
-                    let line_string: String = line.unwrap();
-                    let root = parse_tree(line_string);
+        let lines = f
+            .lines()
+            .skip(1) // skip first because it is the header,
+                                                        // no trees in the header
+            .skip(n_skip);
 
-                    // calculate the splits
-                    let mut splits: Vec<BitVec> = Vec::new();
-                    root_splits(&mut splits, &taxa_map, &n_taxa, &root);
+        let pool = ThreadPoolBuilder::new().num_threads(7).build().unwrap();
+        let (tx, rx) = channel();
 
-                    // lock hashmap for this file
-                    let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
-                    let mut h = hm.lock().unwrap();
-                    for split in splits.iter(){
-                        *h.entry(split.clone()).or_insert(0) += 1;
-                    }
+        for line in lines{
 
-                    // lock hashset for all (global) splits
-                    let gs = Arc::clone(&global_splits);
-                    let mut g = gs.lock().unwrap();
-                    for split in splits.iter(){
-                        g.insert(split.clone());
-                    }
+            let tx = tx.clone();
 
-                })
+            pool.spawn(move || {
+                let line_string: String = line.unwrap();
+                let root = parse_tree(line_string);
+
+                // calculate the splits
+                let mut splits: Vec<BitVec> = Vec::new();
+                root_splits(&mut splits, &taxa_map, &n_taxa, &root);
+
+                tx.send(splits).expect("expected that the channel was there");
+            });
+        }
+
+        for _ in 0..n_keep {
+            
+        }
+      
+        /*
+        let n= lines
+           .par_bridge()
+           .progress_count(n_keep)
+           .map(|line|  {
+                let line_string: String = line.unwrap();
+                let root = parse_tree(line_string);
+
+                // calculate the splits
+                let mut splits: Vec<BitVec> = Vec::new();
+                root_splits(&mut splits, &taxa_map, &n_taxa, &root);
+
+                // lock hashmap for this file
+                let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
+                let mut h = hm.lock().unwrap();
+                for split in splits.iter(){
+                    *h.entry(split.clone()).or_insert(0) += 1;
+                }
+
+                // lock hashset for all (global) splits
+                let gs = Arc::clone(&global_splits);
+                let mut g = gs.lock().unwrap();
+                for split in splits.iter(){
+                    g.insert(split.clone());
+                }
+
+            })
             .count();
+        */
 
-        let n_processed = n as f64;
+        //let n_processed = n as f64;
+        let n_processed = n_keep as f64;
          
         // calculate split frequencies
         let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_capacity_and_hasher(500000, Hash64);
