@@ -96,8 +96,8 @@ fn main() -> io::Result<()> {
     
     let mut taxa_map = HashMap::with_hasher(Hash32);
 
-    for (i, taxon) in all_taxa.iter().enumerate(){
-        taxa_map.insert(taxon.to_owned(), i);
+    for (i, taxon) in all_taxa.into_iter().enumerate(){
+        taxa_map.insert(taxon, i);
     }
         
 
@@ -137,19 +137,22 @@ fn main() -> io::Result<()> {
                     let mut splits: Vec<BitVec> = Vec::new();
                     root_splits(&mut splits, &taxa_map, &n_taxa, &root);
 
+                    // lock hashset for all (global) splits
+                    let mut g = global_splits
+                        .lock()
+                        .expect("expected to be able to lock hashset");
+                    g.extend(splits.clone());
+
                     // lock hashmap for this file
-                    let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
-                    let mut h = hm.lock().unwrap();
-                    for split in splits.iter(){
-                        *h.entry(split.clone()).or_insert(0) += 1;
+                    let mut h = this_file_map
+                        .lock()
+                        .expect("expected to be able to lock hashmap");
+                    for split in splits.into_iter(){
+                        let entry = h.entry(split)
+                            .or_insert(0);
+                        *entry += 1;
                     }
 
-                    // lock hashset for all (global) splits
-                    let gs = Arc::clone(&global_splits);
-                    let mut g = gs.lock().unwrap();
-                    for split in splits.iter(){
-                        g.insert(split.clone());
-                    }
 
                 })
             .count();
@@ -158,7 +161,7 @@ fn main() -> io::Result<()> {
          
         // calculate split frequencies
         let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_capacity_and_hasher(500000, Hash64);
-        let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
+        let hm = this_file_map.clone();
         let h = hm.lock().unwrap();
         for (key, value) in h.iter(){
             let split_occurrences = *value as f64;
@@ -170,7 +173,7 @@ fn main() -> io::Result<()> {
     
     // add in the zero splits 
     for split_frequencies in split_frequencies_per_file.iter_mut(){
-        let gs = Arc::clone(&global_splits);
+        let gs = global_splits.clone();
         let g = gs.lock().unwrap();
 
         for split in g.iter(){
@@ -193,7 +196,7 @@ fn main() -> io::Result<()> {
 
         wtr.write_record(header)?;
 
-        let gs = Arc::clone(&global_splits);
+        let gs = global_splits.clone();
         let g = gs.lock().unwrap();
         let iter = g.iter();
 
@@ -215,7 +218,7 @@ fn main() -> io::Result<()> {
     }else{
         // print summary to stdout
         println!("split \t frequency");
-        let gs = Arc::clone(&global_splits);
+        let gs = global_splits.clone();
         let g = gs.lock().unwrap();
         let iter = g.iter();
 
