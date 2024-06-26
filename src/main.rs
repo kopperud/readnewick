@@ -131,14 +131,14 @@ fn main() -> io::Result<()> {
                                                         // no trees in the header
             .skip(n_skip);
 
-        //let pool = ThreadPoolBuilder::new().num_threads(7).build().unwrap();
+        //let pool = ThreadPoolBuilder::new().num_threads(4).build().unwrap();
         let pool = ThreadPoolBuilder::new().build().unwrap();
         let (tx, rx) = channel();
 
         for line in lines{
 
             let tx = tx.clone();
-            let tm = tm.clone();//Arc::clone(&tm); 
+            let tm = tm.clone();
 
             pool.spawn(move || {
                 let line_string: String = line.unwrap();
@@ -156,14 +156,13 @@ fn main() -> io::Result<()> {
         for _ in pb.wrap_iter(0..n_keep) {
             let splits = rx.recv().expect("expected to receive the result from the channel");
 
+            global_splits.extend(splits.clone());
+
             for split in splits.into_iter(){
-                //*this_file_map.entry(split.clone()).or_insert(0) += 1;
                 let entry = this_file_map
                     .entry(split.clone())
                     .or_insert(0);
                 *entry += 1;
-
-                global_splits.insert(split);
             }
         }
 
