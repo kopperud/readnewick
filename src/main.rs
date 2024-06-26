@@ -52,7 +52,7 @@ fn main() -> io::Result<()> {
             .short('b')
             .long("burnin")
             .value_name("BURNIN")
-            .help("the fraction of sampled (starting from the top) to be discarded")
+            .help("the fraction of samples (starting from the top) to be discarded")
             .action(ArgAction::Set)
             .value_parser(clap::value_parser!(f64))
             .default_value("0.1"))
@@ -131,7 +131,8 @@ fn main() -> io::Result<()> {
                                                         // no trees in the header
             .skip(n_skip);
 
-        let pool = ThreadPoolBuilder::new().num_threads(7).build().unwrap();
+        //let pool = ThreadPoolBuilder::new().num_threads(7).build().unwrap();
+        let pool = ThreadPoolBuilder::new().build().unwrap();
         let (tx, rx) = channel();
 
         for line in lines{
@@ -140,7 +141,6 @@ fn main() -> io::Result<()> {
             let tm = tm.clone();//Arc::clone(&tm); 
 
             pool.spawn(move || {
-            //std::thread::spawn(move || {
                 let line_string: String = line.unwrap();
                 let root = parse_tree(line_string);
 
@@ -156,11 +156,14 @@ fn main() -> io::Result<()> {
         for _ in pb.wrap_iter(0..n_keep) {
             let splits = rx.recv().expect("expected to receive the result from the channel");
 
-            for split in splits.iter(){
-                let item = split;
+            for split in splits.into_iter(){
+                //*this_file_map.entry(split.clone()).or_insert(0) += 1;
+                let entry = this_file_map
+                    .entry(split.clone())
+                    .or_insert(0);
+                *entry += 1;
 
-                *this_file_map.entry(item.clone()).or_insert(0) += 1;
-                global_splits.insert(item.clone());
+                global_splits.insert(split);
             }
         }
 
@@ -169,20 +172,19 @@ fn main() -> io::Result<()> {
         // calculate split frequencies
         let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_capacity_and_hasher(500000, Hash64);
 
-        for (key, value) in this_file_map.iter(){
-            let split_occurrences = *value as f64;
+        for (key, value) in this_file_map.into_iter(){
+            let split_occurrences = value as f64;
             let split_frequency = split_occurrences / n_processed;
-            *split_frequencies.entry(key.clone()).or_insert(0.0) = split_frequency;
+            *split_frequencies.entry(key).or_insert(0.0) = split_frequency;
         }
         split_frequencies_per_file.push(split_frequencies);
     }
     
     // add in the zero splits 
     for split_frequencies in split_frequencies_per_file.iter_mut(){
-
         for split in global_splits.iter(){
             if !split_frequencies.contains_key(split){
-                *split_frequencies.entry(split.clone()).or_insert(0.0) = 0.0;
+                split_frequencies.entry(split.clone()).or_insert(0.0);
             }
         }
     }
