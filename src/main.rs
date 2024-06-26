@@ -1,20 +1,19 @@
 use std::fs::File;
 use std::io::{self, prelude::*, BufReader};
-use std::sync::{Mutex,Arc};
+use std::sync::Arc;
 use std::collections::{HashMap, HashSet};
 use std::sync::mpsc::channel;
 
 use bitvec::prelude::*;
-use indicatif::{ParallelProgressIterator, ProgressBar};
+use indicatif::ProgressBar;
 
-use rayon::iter::ParallelIterator;
 use rayon::ThreadPoolBuilder;
-use rayon::prelude::*;
 
 use clap::{Command, Arg, ArgAction};
 use csv::Writer;
 use fasthash::city::Hash32;
-use fasthash::farm::Hash64;
+use fasthash::city::Hash64;
+//use fasthash::sea::Hash64;
 
 use crate::parser::*;
 use crate::taxonlabels::*;
@@ -83,12 +82,12 @@ fn main() -> io::Result<()> {
 
     let filenames = innames.remove(0);
     eprintln!("input files: \t {:?}", &filenames);
-    let global_splits: Arc<Mutex<HashSet<BitVec, Hash64>>> = Arc::new(Mutex::new(HashSet::with_capacity_and_hasher(500000, Hash64)));
+    let mut global_splits: HashSet<BitVec, Hash64> = HashSet::with_capacity_and_hasher(500000, Hash64);
 
     // read first tree
     // save the taxon names
     // assume they are equal for all samples
-    let first_filename = filenames.first().expect("no tree path arguments");
+    let first_filename = *filenames.first().expect("no tree path arguments");
     let reader = BufReader::new(File::open(first_filename).expect("cannot open file"));
     let second_line = reader.lines()
         .nth(1)
@@ -104,6 +103,7 @@ fn main() -> io::Result<()> {
     for (i, taxon) in all_taxa.iter().enumerate(){
         taxa_map.insert(taxon.to_owned(), i);
     }
+    let tm = Arc::new(taxa_map);
         
 
     let mut split_frequencies_per_file = vec![];
@@ -120,7 +120,7 @@ fn main() -> io::Result<()> {
         let n_skip = (burnin * n_lines as f64).round() as usize;
         let n_keep = n_trees - (n_skip as u64);
 
-        let this_file_map: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::new(Mutex::new(HashMap::with_capacity_and_hasher(500000, Hash64)));
+        let mut this_file_map: HashMap<BitVec, u64, Hash64> = HashMap::with_capacity_and_hasher(500000, Hash64);
 
         let file = File::open(filename)?;
         let f = BufReader::new(&file);
@@ -137,61 +137,39 @@ fn main() -> io::Result<()> {
         for line in lines{
 
             let tx = tx.clone();
+            let tm = tm.clone();//Arc::clone(&tm); 
 
             pool.spawn(move || {
+            //std::thread::spawn(move || {
                 let line_string: String = line.unwrap();
                 let root = parse_tree(line_string);
 
                 // calculate the splits
                 let mut splits: Vec<BitVec> = Vec::new();
-                root_splits(&mut splits, &taxa_map, &n_taxa, &root);
+                root_splits(&mut splits, &tm, &n_taxa, &root);
 
                 tx.send(splits).expect("expected that the channel was there");
             });
         }
 
-        for _ in 0..n_keep {
-            
+        let pb = ProgressBar::new(n_keep);
+        for _ in pb.wrap_iter(0..n_keep) {
+            let splits = rx.recv().expect("expected to receive the result from the channel");
+
+            for split in splits.iter(){
+                let item = split;
+
+                *this_file_map.entry(item.clone()).or_insert(0) += 1;
+                global_splits.insert(item.clone());
+            }
         }
-      
-        /*
-        let n= lines
-           .par_bridge()
-           .progress_count(n_keep)
-           .map(|line|  {
-                let line_string: String = line.unwrap();
-                let root = parse_tree(line_string);
 
-                // calculate the splits
-                let mut splits: Vec<BitVec> = Vec::new();
-                root_splits(&mut splits, &taxa_map, &n_taxa, &root);
-
-                // lock hashmap for this file
-                let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
-                let mut h = hm.lock().unwrap();
-                for split in splits.iter(){
-                    *h.entry(split.clone()).or_insert(0) += 1;
-                }
-
-                // lock hashset for all (global) splits
-                let gs = Arc::clone(&global_splits);
-                let mut g = gs.lock().unwrap();
-                for split in splits.iter(){
-                    g.insert(split.clone());
-                }
-
-            })
-            .count();
-        */
-
-        //let n_processed = n as f64;
         let n_processed = n_keep as f64;
          
         // calculate split frequencies
         let mut split_frequencies: HashMap<BitVec, f64, Hash64> = HashMap::with_capacity_and_hasher(500000, Hash64);
-        let hm: Arc<Mutex<HashMap<BitVec, u64, Hash64>>> = Arc::clone(&this_file_map);
-        let h = hm.lock().unwrap();
-        for (key, value) in h.iter(){
+
+        for (key, value) in this_file_map.iter(){
             let split_occurrences = *value as f64;
             let split_frequency = split_occurrences / n_processed;
             *split_frequencies.entry(key.clone()).or_insert(0.0) = split_frequency;
@@ -201,10 +179,8 @@ fn main() -> io::Result<()> {
     
     // add in the zero splits 
     for split_frequencies in split_frequencies_per_file.iter_mut(){
-        let gs = Arc::clone(&global_splits);
-        let g = gs.lock().unwrap();
 
-        for split in g.iter(){
+        for split in global_splits.iter(){
             if !split_frequencies.contains_key(split){
                 *split_frequencies.entry(split.clone()).or_insert(0.0) = 0.0;
             }
@@ -224,11 +200,10 @@ fn main() -> io::Result<()> {
 
         wtr.write_record(header)?;
 
-        let gs = Arc::clone(&global_splits);
-        let g = gs.lock().unwrap();
-        let iter = g.iter();
+        let iter = global_splits.iter();
 
-        let pb = ProgressBar::new(g.len() as u64);
+        let n_global_splits = global_splits.len();
+        let pb = ProgressBar::new(n_global_splits as u64);
 
         for split in pb.wrap_iter(iter){
             let mut line: Vec<String> = vec![];
@@ -246,9 +221,7 @@ fn main() -> io::Result<()> {
     }else{
         // print summary to stdout
         println!("split \t frequency");
-        let gs = Arc::clone(&global_splits);
-        let g = gs.lock().unwrap();
-        let iter = g.iter();
+        let iter = global_splits.iter();
 
         for split in iter{
             let splitstr = format!("{:b}", split)
